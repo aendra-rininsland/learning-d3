@@ -1,0 +1,20 @@
+{
+  "extends": "eslint:recommended",
+  "plugins": [
+    "flowtype"
+  ],
+  "env": {
+    "es6": true,
+    "browser": true,
+    "jasmine": true
+  },
+  "globals": {
+    "d3": true,
+    "module": true,
+    "inject": true,
+    "require": true
+  },
+  "ecmaFeatures": {
+    "modules": true
+  }
+}
