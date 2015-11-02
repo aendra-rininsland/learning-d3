@@ -9,11 +9,10 @@ do most of your experimenting and whathaveyou. Each chapter has its own branch, 
 document is different in each.
 
 In the book, I say merely to clone this repository and do everything in your local fork. Another
-way to do this is to first fork this repo (you need to be logged in to GitHub):
-
-...And then clone your personal GitHub fork instead of aendrew/learning-d3. This way, you can do
-everything from push your work to the cloud (where people can look at it while giving you support)
-to suggesting changes for the next edition of the book.
+way to do this is to first fork this repo (you need to be logged in to GitHub), and then clone your 
+personal GitHub fork instead of aendrew/learning-d3. This way, you can do everything from push your 
+work to the cloud (where people can look at it while giving you support) to suggesting changes for 
+the next edition of the book.
 
 If you want to collaborate with me on this repo, please read the following rules:
 
