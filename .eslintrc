@@ -6,7 +6,8 @@
   "env": {
     "es6": true,
     "browser": true,
-    "jasmine": true
+    "jasmine": true,
+    "node": true
   },
   "globals": {
     "d3": true,
