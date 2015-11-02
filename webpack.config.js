@@ -36,6 +36,12 @@ module.exports = {
       {
         test: /\.json$/,
         loader: 'json-loader'
+      },
+      // This allows you to `require` CSS files.
+      // We be in JavaScript land here, baby! No <style> tags for us!
+      {
+        test: /\.css$/,
+        loader: 'style-loader!css-loader?modules'
       }
     ]
   }

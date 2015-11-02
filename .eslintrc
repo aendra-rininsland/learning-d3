@@ -5,7 +5,7 @@
  *
  * This is the ESLint config file, .eslintrc. ESLint is used to lint our code, keeping
  * it happy and clean. It also whines if you use double quote marks; change `rules.quotes` if
- * you just absolutely *must* have your double-quotes. 😩
+ * you just absolutely *must* have your double-quotes. 😩😉😜
  */
 
 {
