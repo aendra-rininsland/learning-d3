@@ -1,22 +1,14 @@
-var d3 = require('d3'); // Require
+import {BasicBarChart} from './basic-bar-chart';
 
-export class basicBarChart {
-  constructor(data) {
-    this.data = data;
-    let svg = this.svg = d3.select('svg');
-    let margin = {
-      left: 10,
-      top: 10,
-      right: 10,
-      bottom: 10
+let data = require('./data/chapter1.json');
+
+let totalNumbers = data.filter((obj) => {return obj.population.length; })
+  .map((obj) => {
+    return {
+      name: obj.name,
+      population: Number(obj.population[0].value)
     };
-
-    svg.attr('width', window.innerWidth);
-    svg.attr('height', window.innerHeight);
-    let chart = svg.append('g')
-                   .attr('width', window.innerWidth - margin.left - margin.right)
-  }
-}
+  });
 
 
-new basicBarChart([]);
+new BasicBarChart(totalNumbers);

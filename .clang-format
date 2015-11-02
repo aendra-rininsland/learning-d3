@@ -1,3 +1,6 @@
+# This is .clang-format, which allows us to really easily re-format our code.
+# AFAIK, Clang doesn't bother with changing quote marks, so please generally use single-quotes
+# if doing pull requests to this library. Thanks! -Æ.
 Language:        JavaScript
 BasedOnStyle:    Google
-ColumnLimit:     80
+ColumnLimit:     100
