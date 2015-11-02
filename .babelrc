@@ -1,0 +1,15 @@
+/**
+ * Learning Data Visualization With D3.js, Second Edition
+ *
+ * Ændrew Rininsland, <aendrew@aendrew.com>
+ *
+ * This is the Babel config file, .babelrc. Babel is the ES2015 transpiled used in
+ * the book, and this is where we configure it. Luckily, its defaults are all really
+ * good. However, we are wanting to increase the parser to use stage 1 specs, which are
+ * nearly-there standards from ES7. This is mainly to allow us to use async/wait, which
+ * is totally awesome and well worth it.
+ */
+
+{
+  stage: 1
+}
