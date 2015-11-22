@@ -6,10 +6,10 @@ export class BasicChart {
     this.svg = d3.select('div#chart').append('svg');
 
     this.margin = {
-      left: 100,
-      top: 50,
-      right: 0,
-      bottom: 0
+      left: 30,
+      top: 30,
+      right: 30,
+      bottom: 30
     };
 
     this.svg.attr('width', window.innerWidth);
@@ -20,6 +20,7 @@ export class BasicChart {
 
     this.chart = this.svg.append('g')
       .attr('width', this.width)
-      .attr('height', this.height);
+      .attr('height', this.height)
+      .attr('transform', `translate(${this.margin.left}, ${this.margin.top})`);
   }
 }
