@@ -3,4 +3,4 @@
 # if doing pull requests to this library. Thanks! -Æ.
 Language:        JavaScript
 BasedOnStyle:    Google
-ColumnLimit:     100
+ColumnLimit:     80
