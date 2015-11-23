@@ -7,6 +7,76 @@ export default function() {
   let chart = new BasicChart();
   let svg = chart.chart;
 
+  let rings = 15;
+  let colors = d3.scale.category20b();
+  let angle = d3.scale.linear().domain([0, 20]).range([0, 2*Math.PI]);
+
+  let arc = d3.svg.arc()
+    .innerRadius((d) => d*50/rings)
+    .outerRadius((d) => 50+d*50/rings)
+    .startAngle((d, i, j) => angle(j))
+    .endAngle((d, i, j) => angle(j+1));
+
+  let shade = {
+    darker: (d, j) => d3.rgb(colors(j)).darker(d/rings),
+    brighter: (d, j) => d3.rgb(colors(j)).brighter(d/rings)
+  };
+
+  [
+    [100, 100, shade.darker],
+    [300, 100, shade.brighter]
+  ].forEach(function (conf) {
+    svg.append('g')
+    .attr('transform', `translate(${conf[0]}, ${conf[1]})`)
+    .selectAll('g')
+    .data(colors.range())
+    .enter()
+    .append('g')
+    .selectAll('path')
+    .data((d) => d3.range(0, rings))
+    .enter()
+    .append('path')
+    .attr('d', arc)
+    .attr('fill', (d, i, j) => conf[2](d, j));
+  });
+
+}
+
+export function axisDemo(){
+  let chart = new BasicChart();
+  let svg = chart.chart;
+  require('./index.css');
+
+  let x = d3.scale.linear()
+    .domain([0, 100])
+    .range([chart.margin.left, chart.width - chart.margin.right]);
+
+
+  let axis = d3.svg.axis()
+    .scale(x);
+
+  let axes = [
+    d3.svg.axis().scale(x),
+    d3.svg.axis().scale(x).ticks(5),
+    d3.svg.axis().scale(x).tickSubdivide(3).tickSize(10, 5, 10),
+    d3.svg.axis().scale(x).tickValues([0, 20, 50, 70, 100])
+      .tickFormat((d, i) => ['a', 'e', 'i', 'o', 'u'][i]).orient('top')
+  ];
+
+  axes.forEach(function (axis, i) {
+    let a = svg.append('g')
+    .classed('axis', true)
+    .classed('red', i%2 == 0)
+    .attr('transform', `translate(0, ${i*50+(chart.margin.top)})`)
+    .data(d3.range(0, 100))
+    .call(axis);
+  });
+}
+
+export function FunkyD3PathGenerators() {
+  let chart = new BasicChart();
+  let svg = chart.chart;
+
   let sine = d3.range(0, 10)
                  .map((k) => [0.5 * k * Math.PI, Math.sin(0.5 * k * Math.PI)]);
 
