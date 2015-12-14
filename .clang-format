@@ -4,3 +4,8 @@
 Language:        JavaScript
 BasedOnStyle:    Google
 ColumnLimit:     80
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: true
+BinPackArguments: true
+AllowAllParametersOfDeclarationOnNextLine: true
+BreakBeforeBinaryOperators: true
