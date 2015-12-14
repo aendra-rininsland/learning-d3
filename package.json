@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "mocha spec/index.js",
-    "server": "./node_modules/webpack-dev-server/bin/webpack-dev-server.js --inline"
+    "start": "./node_modules/webpack-dev-server/bin/webpack-dev-server.js --inline"
   },
   "repository": {
     "type": "git",

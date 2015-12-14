@@ -5,20 +5,22 @@ import {BasicChart} from './basic-chart';
 
 export class UlamSpiral extends BasicChart {
   constructor(data) {
-    super(data);  // Run the constructor in BasicChart, attaching chart to `this.chart`
+    super(data); // Run the constructor in BasicChart, attaching chart to
+                 // `this.chart`
 
-    var dot = d3.svg.symbol().type('circle').size(3),
-        center = 400, x = function(x, l) { return center + l * x; },
-        y = function(y, l) { return center + l * y; };
+    let dot = d3.svg.symbol().type('circle').size(3),
+      center = 400,
+      l = 2,
+      x = (x, l) => center + l * x,
+      y = (y, l) => center + l * y;
 
-    d3.text('data/primes-to-100k.txt', (data) => {
-      let primes = data.split('\n').slice(0, 5000).map(Number);
+
+      let primes = this.generatePrimes(2000);
+
       let sequence = this.generateSpiral(d3.max(primes))
-                     .filter(function(d) {
-                       return _.indexOf(primes, d['n'], true) > -1;
-                     });
-
-      var l = 2;
+                         .filter(function(d) {
+                           return primes.indexOf(d['n']) > -1;
+                         });
 
       this.chart.selectAll('path')
           .data(sequence)
@@ -27,60 +29,87 @@ export class UlamSpiral extends BasicChart {
           .attr('transform',
                 d => `translate(${ x(d['x'], l) }, ${ y(d['y'], l) })`)
           .attr('d', dot);
-    });
+
   }
 
-  // Private method
   generateSpiral(n) {
-    let spiral = [];
+    let spiral = [],
+      x = 0, y = 0,
+      min = [0, 0],
+      max = [0, 0],
+      add = [0, 0],
+      direction = 0,
+      directions = {
+        up : [ 0, -1 ],
+        left : [ -1, 0 ],
+        down : [ 0, 1 ],
+        right : [ 1, 0 ]
+      };
 
-    function* Ulam() {
-      let x = 0,
-        y = 0,
-        min = [ 0, 0 ],
-        max = [ 0, 0 ],
-        add = [ 0, 0 ],
-        i = 0,
-        direction = 0,
-        directions = {
-          up : [ 0, -1 ],
-          left : [ -1, 0 ],
-          down : [ 0, 1 ],
-          right : [ 1, 0 ]
-        };
+    d3.range(1, n).forEach((i) => {
+      spiral.push({x : x, y : y, n : i});
+      add = directions[[ 'up', 'left', 'down', 'right' ][direction]];
+      x += add[0], y += add[1];
 
-      while (true) {
-        yield {x : x, y : y, n : i};
+      if (x < min[0]) {
+        direction = (direction + 1) % 4;
+        min[0] = x;
+      }
+      if (x > max[0]) {
+        direction = (direction + 1) % 4;
+        max[0] = x;
+      }
+      if (y < min[1]) {
+        direction = (direction + 1) % 4;
+        min[1] = y;
+      }
+      if (y > max[1]) {
+        direction = (direction + 1) % 4;
+        max[1] = y;
+      }
+    });
 
-        add = directions[[ 'up', 'left', 'down', 'right' ][direction]];
-        x += add[0], y += add[1];
+    return spiral;
+  }
 
-        if (x < min[0]) {
-          direction = (direction + 1) % 4;
-          min[0] = x;
-        }
-        if (x > max[0]) {
-          direction = (direction + 1) % 4;
-          max[0] = x;
-        }
-        if (y < min[1]) {
-          direction = (direction + 1) % 4;
-          min[1] = y;
-        }
-        if (y > max[1]) {
-          direction = (direction + 1) % 4;
-          max[1] = y;
-        }
-
-        i++;
+  generatePrimes(n) {
+    function* getPrimes(count, seq) {
+      while (count) {
+        yield seq.next().value;
+        count--;
       }
     }
 
-    var seq = new Ulam();
-    for (let i = 0; i <= n; i++) {
-      spiral.push(seq.next().value);
+    function* primes() {
+      let seq = numbers(2); // Start on 2.
+      let prime;
+
+      while (true) {
+        prime = seq.next().value;
+        yield prime;
+        seq = filter(seq, prime)
+      }
     }
 
-    return spiral;
+    function* numbers(start) {
+      while (true) {
+        yield start++;
+      }
+    }
+
+    function* filter(seq, prime) {
+      for (let num of seq) {
+        if (num % prime !== 0) {
+          yield num;
+        }
+      }
+    }
+
+    let results = [];
+    for (let prime of getPrimes(n, primes())) {
+      results.push(prime);
+    }
+
+    return results;
   }
 }
