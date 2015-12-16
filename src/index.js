@@ -1,6 +1,7 @@
 import 'babel-core/polyfill';
 
-import {UlamSpiral, ScalesDemo} from './chapter3';
+import {UlamSpiral, ScalesDemo, GeoDemo} from './chapter3';
 
 // new UlamSpiral();
-new ScalesDemo();
+// new ScalesDemo();
+new GeoDemo();

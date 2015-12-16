@@ -27,7 +27,8 @@
   },
   "homepage": "https://github.com/aendrew/learning-d3#readme",
   "dependencies": {
-    "lodash": "^3.10.1"
+    "lodash": "^3.10.1",
+    "topojson": "^1.6.19"
   },
   "devDependencies": {
     "babel-core": "^5.8.29",
