@@ -44,3 +44,11 @@
   stroke-width: 2px;
   stroke: goldenrod;
 }
+
+.bar {
+  transition: all 1s ease-out;
+}
+
+.bar.selected {
+  fill: red;
+}

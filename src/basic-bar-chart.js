@@ -35,9 +35,14 @@ export class BasicBarChart extends BasicChart {
         .attr('y', () => { return y(this.margin.bottom); })
         .attr('height', 0)
         .transition()
-        .delay(function (d, i) { return i*20; })
+        .delay(function (d, i) { return i*200; })
         .duration(800)
         .attr('y', function (d) { return y(d.population); })
-        .attr('height', (d) => {return this.height - y(d.population); }.bind(this));
+        .attr('height', (d) => {return this.height - y(d.population); }.bind(this))
+        .style('fill', 'red')
+        .each('start', function() { console.log("you're making me blush"); })
+        .each('end', function() { console.log("crap, I'm all red now"); })
+
+
   }
 }
