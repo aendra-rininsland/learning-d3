@@ -95,129 +95,210 @@ export class PrisonPopulationChart extends BasicChart {
 
     require('./index.css');
 
+    this.x = d3.scale.linear().range([this.margin.left, this.width - this.margin.right]);
+
     p.then((data) => {
       this.data = data;
       this.drawChart();
     });
+
+    return p;
   }
 
   initialYears = [1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2015];
 
-  drawChart(years = this.initialYears) {
-    console.dir(years);
+  drawChart() {
     let data = this.data;
     data = data.filter((d) => d.year >= d3.min(data, (d) => d.year) && d.year <= d3.max(data, (d)=> d.year));
 
-    this.x = d3.scale.ordinal().rangeRoundBands([this.margin.left, this.width - this.margin.right], 0.1);
     this.y = d3.scale.linear().range([this.height, this.margin.bottom]);
 
-    this.x.domain(data.map((d) => d.year));
+    this.x.domain([d3.min(data, (d) => d.year), d3.max(data, (d) => d.year)]);
     this.y.domain([0, d3.max(data, (d) => Number(d.total))]);
 
-    this.xAxis = d3.svg.axis().scale(this.x).orient('bottom').tickValues(years)
+    this.xAxis = d3.svg.axis().scale(this.x).orient('bottom').ticks(10, 'd');
     this.yAxis = d3.svg.axis().scale(this.y).orient('left');
 
     this.chart.append('g')
-        .attr('class', 'axis-x axis')
+        .classed('axis x', true)
         .attr('transform', `translate(0, ${this.height})`)
         .call(this.xAxis);
 
     this.chart.append('g')
-        .attr('class', 'axis-y axis')
+        .classed('axis y', true)
         .attr('transform', `translate(${this.margin.left}, 0)`)
         .call(this.yAxis);
 
-    this.bars = this.chart.selectAll('rect')
+    this.bars = this.chart.append('g').classed('bars', true).selectAll('rect')
         .data(data)
         .enter()
         .append('rect')
-        .style('x', (d) => this.x(d.year))
+        .style('x', (d) => this.x(+d.year))
         .style('y', () => this.y(0))
-        .style('width', this.x.rangeBand())
+        .style('width', this.width / data.length - 5)
         .style('height', 0);
 
     // Run CSS animation
     setTimeout(()=> {
       this.bars.classed('bar', true)
-      .style('height', (d) => this.height - this.y(d.total) )
-        .style('y', (d) => this.y(d.total));
+      .style('height', (d) => this.height - this.y(+d.total) )
+        .style('y', (d) => this.y(+d.total));
     }, 1000);
   }
 }
 
 export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
-
-
   constructor(path) {
-    super(path);
-    this.height = window.innerHeight * (2/3);
-    this.addUIElements();
+    let p = super(path);
+    this.height = window.innerHeight / 2;
+    this.chart.attr('height', this.height);
+    this.svg.attr('height', this.height + 20);
+    this.margin.right = 10;
+    this.margin.bottom = 10;
+
+    this.scenes = require('./data/prison_scenes.json');
+    this.scenes.forEach((v, i) => v.cb = this['loadScene' + i].bind(this));
+
+    p.then(() => this.addUIElements());
+
+    return p;
   }
 
-  chapters = [
-    {label: '1900–2015', domain: [1900, 2015], cb: this.loadScene1.bind(this)},
-    {label: '1900–1930', domain: [1900, 1930], cb: this.loadScene2.bind(this)},
-    {label: '1930–1960', domain: [1930, 1960], cb: this.loadScene3.bind(this)},
-    {label: '1960–1990', domain: [1960, 1990], cb: this.loadScene4.bind(this)},
-    {label: '1990–2015', domain: [1990, 2015], cb: this.loadScene5.bind(this)}
-  ]
-
   addUIElements() {
-    let context = this;
-    this.buttons = d3.select('#chart').selectAll('.button')
-      .data(this.chapters).enter()
-      .append('button')
-      .classed('scene', true)
-      .text((d) => d.label)
-      .on('click', d => d.cb())
-      .on('touchstart', d => d.cb());
+
+    this.buttons = d3.select('#chart')
+      .append('div')
+      .classed('buttons', true)
+        .selectAll('.button')
+        .data(this.scenes).enter()
+        .append('button')
+        .classed('scene', true)
+        .text((d) => d.label)
+        .on('click', d => d.cb())
+        .on('touchstart', d => d.cb());
 
     this.words = d3.select('#chart').append('div');
     this.words.classed('words', true);
   }
 
   clearSelected() {
-    d3.selectAll('.selected').classed('selected', false);
+    return new Promise((res, rej) => {
+      d3.selectAll('.selected').classed('selected', false);
+      res();
+    });
   }
 
-  updateData() {
-    // Update axes
-    // d3.select('.axis-x').call(this.xAxis);
-    // d3.select('.axis-y').call(this.yAxis);
+  updateChart(data = this.data) {
+    return new Promise((res, rej) => {
+      let bars = bars.selectAll('.bar').data(data);
 
-    // Update bars
-    this.bars.style('height', (d) => this.height - this.y(d.total) )
-      .style('y', (d) => this.y(d.total))
-      .style('x', (d) => this.x(d.year))
-      .style('width', this.x.rangeBand());
+      this.x.domain([d3.min(data, (d) => d.year), d3.max(data, (d) => d.year)]);
+      this.y.domain([0, d3.max(data, (d) => Number(d.total))]);
+
+      this.chart.selectAll('.axis.x')
+        .call(this.xAxis);
+      this.chart.selectAll('.axis.y')
+        .call(this.yAxis);
+
+      // Update
+      bars.style('x', (d) => this.x(+d.year))
+        .style('width', this.width / data.length - 5)
+        .style('height', (d) => this.height - this.y(+d.total) )
+        .style('y', (d) => this.y(+d.total))
+
+      // Add
+      bars.enter()
+        .append('rect')
+        .style('x', (d) => this.x(+d.year))
+        .style('width', this.width / data.length - 5)
+        .style('height', (d) => this.height - this.y(+d.total) )
+        .style('y', (d) => this.y(+d.total))
+        .classed('bar', true);
+
+      // Remove
+      bars.exit().remove();
+
+      res();
+    });
+  }
+
+  selectBars(years) {
+    this.bars.filter((d) => years.indexOf(Number(d.year)) > -1).classed('selected', true);
+  }
+
+  loadScene0() {
+    this.clearSelected().then(() => this.updateChart());
+    this.words.html('');
   }
 
   loadScene1() {
-    this.clearSelected();
-    // this.x.domain(this.chapters[0].domain);
-    // this.y.domain([0, d3.max(this.data, d => d.year)]);
-    this.drawChart();
-    this.words.html('In general, the rise in prison population over the last century reflects the rise in general population.');
+    let scene = this.scenes[1];
+    this.clearSelected().then(() => {
+      this.updateChart(this.data.filter((d) =>
+        d3.range(scene.domain[0], scene.domain[1]).indexOf(Number(d.year)) > -1))
+          .then(() => this.selectBars(d3.range(1914, 1918)));
+    });
+    this.words.html(scene.copy);
   }
+
   loadScene2() {
-    this.clearSelected();
-    this.bars.filter((d) => [1914, 1915, 1916, 1917, 1918].indexOf(Number(d.year)) > -1).classed('selected', true);
-    this.drawChart(d3.range(1900, 1930));
-    this.words.html('Prison numbers fall, and then – as men return from the battlefields of the First World War – start to rise to new heights.');
+    let scene = this.scenes[2];
+    this.clearSelected().then(
+      () => {
+        this.updateChart(this.data.filter((d) => d3.range(scene.domain[0], scene.domain[1]).indexOf(Number(d.year)) > -1))
+          .then(() => this.selectBars(d3.range(1939, 1945)));
+    });
+    this.words.html(scene.copy);
   }
+
   loadScene3() {
-    this.clearSelected();
-    this.x.domain(this.chapters[2].domain);
-    this.words.html('The number of people behind bars remains broadly stable, but again starts to rise as men are demobbed after the Second World War.');
+    let scene = this.scenes[3];
+    this.clearSelected().then(
+      () => this.updateChart(this.data.filter((d) => d3.range(scene.domain[0], scene.domain[1]).indexOf(Number(d.year)) > -1))
+    );
+    this.words.html(scene.copy);
   }
+
   loadScene4() {
-    this.clearSelected();
-    this.x.domain(this.chapters[3].domain);
-    this.words.html('A consumer society has now fully arrived, and with it more goods to tempt thieves, robbers and burglars, resulting in a steady rise in the criminal population.');
+    let scene = this.scenes[4];
+    this.clearSelected().then(
+      () => {
+        this.updateChart(this.data.filter((d) => d3.range(scene.domain[0], scene.domain[1]).indexOf(Number(d.year)) > -1))
+          .then(() => this.selectBars([1993]));
+      }
+    );
+    this.words.text(scene.copy);
   }
-  loadScene5() {
-    this.clearSelected();
-    this.x.domain(this.chapters[4].domain);
-    this.words.text('The penal system becomes the latest battleground for the Conservatives and Labour – particularly after the 1993 murder of James Bulger – which helps drive up the jail population.');
+}
+
+export class DraggableInteractivePrisonChart extends InteractivePrisonPopulationChart {
+  constructor(path) {
+    let p = super(path);
+    this.x.range([this.margin.left, this.width * 4]);
+    p.then(() => this.addDrag());
+  }
+
+  addDrag() {
+    let bars = d3.select('.bars').on('transitionend', ()=> {
+      let dragContainer = this.chart.append('rect')
+        .classed('bar-container', true)
+        .attr('width', bars.node().getBBox().width)
+        .attr('height', bars.node().getBBox().height)
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('fill-opacity', 0);
+
+      let drag = d3.behavior.drag()
+      .on('drag', function () {
+        let barsTransform = d3.transform(bars.attr('transform'));
+        let xAxisTransform = d3.transform(d3.select('.axis.x').attr('transform'));
+        bars.attr('transform', `translate(${barsTransform.translate[0] + d3.event.dx}, 0)`);
+        d3.select('.axis.x').attr('transform',
+          `translate(${xAxisTransform.translate[0] + d3.event.dx}, ${xAxisTransform.translate[1]})`);
+      });
+
+      dragContainer.call(drag);
+    });
+
   }
 }

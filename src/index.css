@@ -46,9 +46,20 @@
 }
 
 .bar {
-  transition: all 1s ease-out;
+  transition: all 0.25s ease-out;
 }
 
 .bar.selected {
   fill: red;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-around;
+  margin: 3em auto;
+}
+
+.words {
+  padding: 0.5em;
+  font-size: 2em;
 }
