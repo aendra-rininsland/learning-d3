@@ -95,7 +95,7 @@ export class PrisonPopulationChart extends BasicChart {
 
     require('./index.css');
 
-    this.x = d3.scale.linear().range([this.margin.left, this.width - this.margin.right]);
+    this.x = d3.scale.ordinal().rangeBands([this.margin.left, this.width], 0.1);
 
     p.then((data) => {
       this.data = data;
@@ -112,11 +112,10 @@ export class PrisonPopulationChart extends BasicChart {
     data = data.filter((d) => d.year >= d3.min(data, (d) => d.year) && d.year <= d3.max(data, (d)=> d.year));
 
     this.y = d3.scale.linear().range([this.height, this.margin.bottom]);
-
-    this.x.domain([d3.min(data, (d) => d.year), d3.max(data, (d) => d.year)]);
+    this.x.domain(data.map((d) => d.year));
     this.y.domain([0, d3.max(data, (d) => Number(d.total))]);
 
-    this.xAxis = d3.svg.axis().scale(this.x).orient('bottom').ticks(10, 'd');
+    this.xAxis = d3.svg.axis().scale(this.x).orient('bottom').tickValues(this.x.domain().filter((d, i) => !(i % 5)));
     this.yAxis = d3.svg.axis().scale(this.y).orient('left');
 
     this.chart.append('g')
@@ -133,9 +132,11 @@ export class PrisonPopulationChart extends BasicChart {
         .data(data)
         .enter()
         .append('rect')
-        .style('x', (d) => this.x(+d.year))
+        .style('x', (d) => {
+          return this.x(d.year);
+        })
         .style('y', () => this.y(0))
-        .style('width', this.width / data.length - 5)
+        .style('width', this.x.rangeBand())
         .style('height', 0);
 
     // Run CSS animation
@@ -190,17 +191,17 @@ export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
     return new Promise((res, rej) => {
       let bars = this.chart.selectAll('.bar').data(data);
 
-      this.x.domain([d3.min(data, (d) => d.year), d3.max(data, (d) => d.year)]);
+      this.x.domain(data.map((d) => d.year));
       this.y.domain([0, d3.max(data, (d) => Number(d.total))]);
 
       this.chart.selectAll('.axis.x')
-        .call(this.xAxis);
+        .call(d3.svg.axis().scale(this.x).orient('bottom').tickValues(this.x.domain().filter((d, i) => !(i % 5))));
       this.chart.selectAll('.axis.y')
         .call(this.yAxis);
 
       // Update
-      bars.style('x', (d) => this.x(+d.year))
-        .style('width', this.width / data.length - 5)
+      bars.style('x', (d) => this.x(d.year))
+        .style('width', this.x.rangeBand())
         .style('height', (d) => this.height - this.y(+d.total) )
         .style('y', (d) => this.y(+d.total))
 
@@ -208,7 +209,7 @@ export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
       bars.enter()
         .append('rect')
         .style('x', (d) => this.x(+d.year))
-        .style('width', this.width / data.length - 5)
+        .style('width', this.x.rangeBand())
         .style('height', (d) => this.height - this.y(+d.total) )
         .style('y', (d) => this.y(+d.total))
         .classed('bar', true);
@@ -272,7 +273,7 @@ export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
 export class DraggableInteractivePrisonChart extends InteractivePrisonPopulationChart {
   constructor(path) {
     super(path);
-    this.x.range([this.margin.left, this.width * 4]);
+    this.x.rangeBands([this.margin.left, this.width * 4], 0.1);
   }
 
   addUIElements() {
@@ -304,26 +305,23 @@ export class SelectableInteractivePrisonChart extends InteractivePrisonPopulatio
   }
 
   addUIElements() {
-    let chart = this.chart;
-    chart.append('g')
+    this.chart.append('g')
       .classed('brush', true)
-      .call(d3.svg.brush().x(this.x).y(this.y)
-      .on('brushstart', this.brushstart.bind(this))
-      .on('brush', this.brushmove.bind(this))
-      .on('brushend', this.brushend.bind(this)));
+      .call(
+        d3.svg.brush().x(this.x).y(this.y)
+          .on('brushstart', this.brushstart.bind(this))
+          .on('brush', this.brushmove.bind(this))
+          .on('brushend', this.brushend.bind(this))
+      );
   }
 
-  brushstart() {
-    // this.bars.each((d) => d.selected)
-  }
+  brushstart() {}
 
   brushmove() {
     let e = d3.event.target.extent();
     d3.selectAll('.bar').classed('selected', (d) =>
-      e[0][0] <= d.year
-      && d.year <= e[1][0]
-      && e[0][1] <= d.total
-      && d.total <= e[1][1]
+      e[0][0] <= this.x(d.year)
+      && this.x(d.year) <= e[1][0]
     );
   }
 

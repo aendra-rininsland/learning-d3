@@ -70,13 +70,14 @@
   shape-rendering: crispEdges;
 }
 
-.bar {
-  -webkit-transition: fill-opacity 125ms ease-in-out;
-}
-.selecting circle {
-  fill-opacity: 0.25;
-}
+/*.bar {
+  transition: fill-opacity 125ms ease-in-out;
+}*/
 
 .bar.selected {
-  stroke: red;
+  stroke: whitesmoke;
+}
+
+.bar.selecting {
+  fill-opacity: 0.9;
 }
