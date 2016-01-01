@@ -160,8 +160,6 @@ export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
     this.scenes.forEach((v, i) => v.cb = this['loadScene' + i].bind(this));
 
     p.then(() => this.addUIElements());
-
-    return p;
   }
 
   addUIElements() {
@@ -190,7 +188,7 @@ export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
 
   updateChart(data = this.data) {
     return new Promise((res, rej) => {
-      let bars = bars.selectAll('.bar').data(data);
+      let bars = this.chart.selectAll('.bar').data(data);
 
       this.x.domain([d3.min(data, (d) => d.year), d3.max(data, (d) => d.year)]);
       this.y.domain([0, d3.max(data, (d) => Number(d.total))]);
@@ -273,12 +271,11 @@ export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
 
 export class DraggableInteractivePrisonChart extends InteractivePrisonPopulationChart {
   constructor(path) {
-    let p = super(path);
+    super(path);
     this.x.range([this.margin.left, this.width * 4]);
-    p.then(() => this.addDrag());
   }
 
-  addDrag() {
+  addUIElements() {
     let bars = d3.select('.bars').on('transitionend', ()=> {
       let dragContainer = this.chart.append('rect')
         .classed('bar-container', true)
@@ -288,8 +285,7 @@ export class DraggableInteractivePrisonChart extends InteractivePrisonPopulation
         .attr('y', 0)
         .attr('fill-opacity', 0);
 
-      let drag = d3.behavior.drag()
-      .on('drag', function () {
+      let drag = d3.behavior.drag().on('drag', function () {
         let barsTransform = d3.transform(bars.attr('transform'));
         let xAxisTransform = d3.transform(d3.select('.axis.x').attr('transform'));
         bars.attr('transform', `translate(${barsTransform.translate[0] + d3.event.dx}, 0)`);
@@ -299,6 +295,68 @@ export class DraggableInteractivePrisonChart extends InteractivePrisonPopulation
 
       dragContainer.call(drag);
     });
+  }
+}
 
+export class SelectableInteractivePrisonChart extends InteractivePrisonPopulationChart {
+  constructor(path) {
+    super(path);
+  }
+
+  addUIElements() {
+    let chart = this.chart;
+    chart.append('g')
+      .classed('brush', true)
+      .call(d3.svg.brush().x(this.x).y(this.y)
+      .on('brushstart', this.brushstart.bind(this))
+      .on('brush', this.brushmove.bind(this))
+      .on('brushend', this.brushend.bind(this)));
+  }
+
+  brushstart() {
+    // this.bars.each((d) => d.selected)
+  }
+
+  brushmove() {
+    let e = d3.event.target.extent();
+    d3.selectAll('.bar').classed('selected', (d) =>
+      e[0][0] <= d.year
+      && d.year <= e[1][0]
+      && e[0][1] <= d.total
+      && d.total <= e[1][1]
+    );
+  }
+
+  brushend() {
+    let selected = d3.selectAll('.selected');
+
+    // Clear brush object
+    d3.event.target.clear();
+    d3.select('g.brush').call(d3.event.target);
+
+    // Zoom to selection
+    let first = selected[0][0];
+    let last = selected[0][selected.size() - 1]
+    let startYear = d3.select(first).data()[0].year;
+    let endYear = d3.select(last).data()[0].year;
+    this.clearSelected().then(() => {
+      this.updateChart(this.data.filter((d) =>
+        d3.range(startYear, endYear).indexOf(Number(d.year)) > -1));
+    });
+
+    let hitbox = this.svg
+      .append('rect')
+      .classed('hitbox', true)
+      .attr('width', this.svg.attr('width'))
+      .attr('height', this.svg.attr('height'))
+      .attr('fill-opacity', 0);
+
+    hitbox.on('contextmenu', this.rightclick.bind(this));
+  }
+
+  rightclick() {
+    d3.event.preventDefault();
+    this.clearSelected().then(this.updateChart.bind(this));
+    this.svg.select('.hitbox').remove();
   }
 }

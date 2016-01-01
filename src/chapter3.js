@@ -50,6 +50,43 @@ export class GeoDemo extends BasicChart {
       addRenditions(airports, renditions);
     });
 
+    function zoomable() {
+      // Slow way
+      // chart.call(d3.behavior.zoom()
+      //   .translate(projection.translate())
+      //   .scale(projection.scale())
+      //   .on('zoom', () => onzoom()));
+
+      // Fast way
+      chart.call(d3.behavior.zoom()
+        .center([chart.attr('width') / 2, chart.attr('height') / 2])
+        .scale(projection.scale())
+        .on('zoom', () => onzoom()));
+    }
+
+    function onzoom() {
+      // Slow way
+      // projection
+      //   .translate(d3.event.translate)
+      //   .scale(d3.event.scale);
+      //
+      // d3.selectAll('path')
+      // .attr('d', d3.geo.path().projection(projection));
+      //
+      // d3.selectAll('line.route')
+      //   .attr('x1', (d) => projection([d.from.lon, d.from.lat])[0])
+      //   .attr('y1', (d) => projection([d.from.lon, d.from.lat])[1])
+      //   .attr('x2', (d) => projection([d.to.lon, d.to.lat])[0])
+      //   .attr('y2', (d) => projection([d.to.lon, d.to.lat])[1]);
+
+      // Fast way
+      let scaleFactor = d3.event.scale / projection.scale();
+      chart.attr('transform', `translate(${d3.event.translate}) scale(${scaleFactor})`);
+      d3.selectAll('line.route').each(function() {
+        d3.select(this).style('stroke-width', `${ 2 / scaleFactor}px`);
+      });
+    }
+
     function addToMap(collection, key) {
       return chart.append('g')
       .selectAll('path')
@@ -64,12 +101,14 @@ export class GeoDemo extends BasicChart {
       .classed('ocean', true);
       addToMap(land, 'ne_50m_land')
       .classed('land', true);
-      addToMap(sea, 'ne_50m_rivers_lake_centerlines')
-      .classed('river', true);
+      // addToMap(sea, 'ne_50m_rivers_lake_centerlines')
+      // .classed('river', true);
       addToMap(cultural, 'ne_50m_admin_0_boundary_lines_land')
       .classed('boundary', true);
-      addToMap(cultural, 'ne_10m_urban_areas')
-      .classed('urban', true);
+      // addToMap(cultural, 'ne_10m_urban_areas')
+      // .classed('urban', true);
+
+      zoomable();
     }
 
     function addRenditions(_airports, renditions) {

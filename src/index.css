@@ -63,3 +63,20 @@
   padding: 0.5em;
   font-size: 2em;
 }
+
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  -webkit-transition: fill-opacity 125ms ease-in-out;
+}
+.selecting circle {
+  fill-opacity: 0.25;
+}
+
+.bar.selected {
+  stroke: red;
+}
