@@ -105,11 +105,8 @@ export class PrisonPopulationChart extends BasicChart {
     return p;
   }
 
-  initialYears = [1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2015];
-
   drawChart() {
     let data = this.data;
-    data = data.filter((d) => d.year >= d3.min(data, (d) => d.year) && d.year <= d3.max(data, (d)=> d.year));
 
     this.y = d3.scale.linear().range([this.height, this.margin.bottom]);
     this.x.domain(data.map((d) => d.year));
@@ -132,9 +129,7 @@ export class PrisonPopulationChart extends BasicChart {
         .data(data)
         .enter()
         .append('rect')
-        .style('x', (d) => {
-          return this.x(d.year);
-        })
+        .style('x', (d) => this.x(d.year))
         .style('y', () => this.y(0))
         .style('width', this.x.rangeBand())
         .style('height', 0);
@@ -142,8 +137,8 @@ export class PrisonPopulationChart extends BasicChart {
     // Run CSS animation
     setTimeout(()=> {
       this.bars.classed('bar', true)
-      .style('height', (d) => this.height - this.y(+d.total) )
-        .style('y', (d) => this.y(+d.total));
+      .style('height', (d) => this.height - this.y(d.total) )
+        .style('y', (d) => this.y(d.total));
     }, 1000);
   }
 }
@@ -164,7 +159,6 @@ export class InteractivePrisonPopulationChart extends PrisonPopulationChart {
   }
 
   addUIElements() {
-
     this.buttons = d3.select('#chart')
       .append('div')
       .classed('buttons', true)

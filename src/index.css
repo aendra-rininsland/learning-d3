@@ -70,12 +70,8 @@
   shape-rendering: crispEdges;
 }
 
-/*.bar {
-  transition: fill-opacity 125ms ease-in-out;
-}*/
-
 .bar.selected {
-  stroke: whitesmoke;
+  stroke: black;
 }
 
 .bar.selecting {
