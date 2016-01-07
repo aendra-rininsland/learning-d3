@@ -10,9 +10,9 @@
   font-size: 11px;
 }
 
-.axis.red line,
-.axis.red path {
-  stroke: red;
+.axis.dotted line,
+.axis.dotted path {
+  stroke-dasharray: 0.9;
 }
 
 .ocean {

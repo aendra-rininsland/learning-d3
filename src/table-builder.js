@@ -4,7 +4,7 @@
 
 let d3 = require('d3');
 
-export default class TableBuilder {
+export class TableBuilder {
   constructor(url) {
     this.load(url);
 
@@ -44,5 +44,38 @@ export default class TableBuilder {
       .enter()
       .append('td')
       .text(d => d);
+  }
+}
+
+export class TableBuilderClassic {
+  constructor(rows) {
+    let d3 = require('d3');
+
+    // Remove the first element for the header
+    this.header = rows.shift();
+    this.data = rows; // Everything else is a normal row.
+
+    let table = d3.select('body')
+      .append('table').attr('class', 'table');
+
+    let tableHeader = table.append('thead').append('tr');
+    let tableBody = table.append('tbody');
+
+    // Each element in "header" is a string.
+    this.header.forEach(function(value){
+      tableHeader.append('th').text(value);
+    });
+
+    // Each element in "data" is an array
+    this.data.forEach((row) => {
+      let tableRow = tableBody.append('tr');
+
+      row.forEach((value) => {
+        // Now, each element in "row" is a string
+        tableRow.append('td').text(value);
+      });
+    });
+
+    return table;
   }
 }

@@ -1,9 +1,51 @@
-import TableBuilder from './table-builder';
+import {TableBuilder} from './table-builder';
 import {BasicChart} from './basic-chart';
 
 let d3 = require('d3');
 
 export default function() {
+  let chart = new BasicChart();
+  let svg = chart.chart;
+
+  let rings = 15;
+  let colors = d3.scale.category20b();
+let angle = d3.scale.linear().domain([0, 20]).range([0, 2*Math.PI]);
+
+
+    let arc = d3.svg.arc()
+    .innerRadius((d) => d*50/rings)
+    .outerRadius((d) => 50+d*50/rings)
+    .startAngle((d, i, j) => angle(j))
+    .endAngle((d, i, j) => angle(j+1));
+
+  let shade = {
+    darker: (d, j) => d3.rgb(colors(j)).darker(d/rings),
+    brighter: (d, j) => d3.rgb(colors(j)).brighter(d/rings)
+  };
+[
+  [100, 100, shade.darker],
+  [300, 100, shade.brighter]
+].forEach(function (conf) {
+  svg.append('g')
+  .attr('transform', `translate(${conf[0]}, ${conf[1]})`)
+  .selectAll('g')
+  .data(colors.range())
+  .enter()
+  .append('g')
+  .selectAll('path')
+  .data((d) => d3.range(0, rings))
+  .enter()
+  .append('path')
+  .attr('d', arc)
+  .attr('fill', (d, i, j) => conf[2](d, j));
+});
+
+}
+
+
+
+// export default function() {
+export function colorScale() {
   let chart = new BasicChart();
   let svg = chart.chart;
 
