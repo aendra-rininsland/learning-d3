@@ -1,2 +1,4 @@
-import ch2 from './chapter2';
-ch2();
+window.d3 = undefined;
+
+import PoliticalDonorChart from './chapter5';
+new PoliticalDonorChart('pie', 'The Rt Hon Edward Miliband MP')
