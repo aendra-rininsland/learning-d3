@@ -56,3 +56,61 @@ export function tickAngle (d) {
   let degrees = (midAngle + d.startAngle) / Math.PI * 180 - 90;
   return degrees;
 }
+
+export function tooltip (text, chart) {
+  return function (selection) {
+    selection.on('mouseover.tooltip', mouseover)
+      .on('mousemove.tooltip', mousemove)
+      .on('mouseout.tooltip', mouseout);
+
+    function mouseover(d) {
+      let path = d3.select(this);
+      path.classed('highlighted', true);
+
+      let mouse = d3.mouse(chart.node());
+      let tool = chart.append('g')
+        .attr({
+          'id': 'nameTooltip',
+          transform: `translate(${mouse[0] + 5},${mouse[1] + 10})`
+        });
+
+      let textNode = tool.append('text')
+        .text(text(d)).node();
+
+      tool.append('rect')
+        .attr({
+          height: textNode.getBBox().height,
+          width: textNode.getBBox().width,
+          transform: 'translate(0, -16)'
+        });
+
+      tool.select('text')
+        .remove();
+
+      tool.append('text').text(text(d));
+    }
+
+    function mousemove () {
+        var mouse = d3.mouse(chart.node());
+        d3.select('#nameTooltip')
+        .attr('transform', `translate(${mouse[0] + 15},${mouse[1] + 20})`);
+    }
+
+    function mouseout () {
+        var path = d3.select(this);
+        path.classed('highlighted', false);
+        d3.select('#nameTooltip').remove();
+    }
+  }
+}
+
+export function connectionMatrix (data) {
+  let nameIds = nameId(data, (d) => d.DonorName );
+  let uniques = nameIds.domain();
+  let matrix = d3.range(uniques.length).map(() => d3.range(uniques.length).map(() =>  0));
+  data.forEach((d) => {
+    matrix[nameIds(d.DonorName)][nameIds(d.EntityName)] += Number(d.Value.replace(/[^\d\.]*/g, ''));
+  });
+
+  return matrix;
+}

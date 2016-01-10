@@ -16,3 +16,29 @@ rect {
 .bar text {
   font-size: 0.4em;
 }
+
+#nameTooltip {
+  font-size: 1.3em;
+}
+
+#nameTooltip rect {
+  fill: white;
+}
+
+#nameTooltip text {
+  fill: #000;
+  stroke: #000;
+  color: #000;
+}
+
+path.highlighted {
+  fill-opacity: 0.5;
+  stroke: red;
+  stroke-width: 1.5;
+}
+
+.chord path {
+      stroke: black;
+      stroke-width: 0.2;
+      opacity: 0.6;
+}
