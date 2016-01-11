@@ -18,12 +18,12 @@ export function nameId(data, name) {
 }
 
 export function binPerName (data, name) {
-   let nameIds = nameId(data, name);
-   let histogram = d3.layout.histogram()
-           .bins(nameIds.range())
-           .value((d) => nameIds(name(d)));
+  let nameIds = nameId(data, name);
+  let histogram = d3.layout.histogram()
+    .bins(nameIds.range())
+    .value((d) => nameIds(name(d)));
 
-   return histogram(data);
+  return histogram(data);
 }
 
 export const color = d3.scale.ordinal().range(['#EF3B39', '#FFCD05', '#69C9CA', '#666699', '#CC3366',
@@ -113,4 +113,44 @@ export function connectionMatrix (data) {
   });
 
   return matrix;
+}
+
+export function allUniqueNames(data) {
+  let donors = uniques(data, (d) => d.DonorName);
+  let donees = uniques(data, (d) => d.EntityName);
+  return uniques(donors.concat(donees), (d) => d);
+}
+
+export function makeTree(data, filterByDonor, name1, name2) {
+  let tree = {name: 'Donations', children: []};
+  let uniqueNames = uniques(data, (d) => d.DonorName)
+
+  tree.children = uniqueNames.map((name) => {
+    let donatedTo = data.filter((d) => filterByDonor(d, name));
+    let donationsValue = donatedTo.reduce((last, curr) => {
+          let value = Number(curr.Value.replace(/[^\d\.]*/g, ''));
+          return value ? last + value : last;
+      }, 0);
+      console.dir(donatedTo);
+
+    // let givenTo = binPerName(data.filter((d) => filterByDonor(d, name)), (d) => {
+    //   return d.EntityName;
+    // });
+
+    return {
+      name: name,
+      donated: donationsValue,
+      children: donatedTo.map((d) => {
+        console.log(d, typeof d);
+        return {
+          name: name2(d),
+          count: 0,
+          children: []
+        };
+      })
+    };
+  });
+  // console.dir(tree.children.filter((d) => d.name === 'Golden Tours'));
+
+  return tree;
 }

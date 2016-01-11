@@ -1,6 +1,10 @@
+/**
+ * Examples from chapter 3.
+ */
+
 import {BasicChart} from './basic-chart';
 
-var topojson = require('topojson');
+let topojson = require('topojson');
 require('./index.css');
 
 export class GeoDemo extends BasicChart {

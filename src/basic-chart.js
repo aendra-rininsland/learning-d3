@@ -1,4 +1,15 @@
+/**
+ * class BasicChart
+ * Simple class for scaffolding D3 charts
+ * @chapter 1
+ */
+
 export class BasicChart {
+  /**
+   * Instantiates the class.
+   * @param  {any} data Data passed in, usually from child classes
+   * @return {void}
+   */
   constructor(data) {
     var d3 = require('d3'); // Require D3 via Webpack
 

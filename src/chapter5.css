@@ -42,3 +42,13 @@ path.highlighted {
       stroke-width: 0.2;
       opacity: 0.6;
 }
+
+.link {
+  stroke: lightgrey;
+  stroke-width: 0.3;
+}
+
+path.link {
+  fill: none;
+  stroke: lightgrey;
+}

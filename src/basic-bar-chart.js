@@ -1,6 +1,18 @@
 import {BasicChart} from './basic-chart';
 
+/**
+ * class BasicBarChart
+ * @extends BasicChart
+ * @chapter 1
+ */
 export class BasicBarChart extends BasicChart {
+  /**
+   * Instaniates the parent class and assigns scales
+   * Creates the entire chart. We do more in methods in other chapters.
+   *
+   * @param  {any} data Data to attach to the chart
+   * @return {void}
+   */
   constructor(data) {
     super(data);  // Run the constructor in BasicChart, attaching chart to `this.chart`
 
