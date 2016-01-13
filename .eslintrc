@@ -10,9 +10,6 @@
 
 {
   "extends": "eslint:recommended",
-  "plugins": [
-    "flowtype"
-  ],
   "env": {
     "es6": true,
     "browser": true,

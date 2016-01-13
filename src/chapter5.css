@@ -8,10 +8,10 @@
   font-size: 0.75em;
 }
 
-/*rect {
+rect.histogram-bar {
   fill: steelblue;
   shape-rendering: crispEdges;
-}*/
+}
 
 .bar text {
   font-size: 0.4em;

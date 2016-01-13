@@ -5,6 +5,7 @@ let d3 = require('d3');
 export default class PoliticalDonorChart extends BasicChart {
   constructor(chartType, ...args) {
     super();
+    require('./chapter5.css');
 
     let p = new Promise((res, rej) => {
       d3.csv('data/uk_political_donors.csv', (err, data) => err ? rej(err) : res(data));
@@ -18,7 +19,7 @@ export default class PoliticalDonorChart extends BasicChart {
   }
 
   histogram() {
-    let data = this.data.filter((d) => d.EntityName.match(' MP'));
+    let data = this.data;
     let nameId = helpers.nameId(data, (d) => d.EntityName);
     let histogram = d3.layout.histogram()
                         .bins(nameId.range())
@@ -44,32 +45,29 @@ export default class PoliticalDonorChart extends BasicChart {
      .call(yAxis);
 
     let bar = this.chart.selectAll('.bar')
-               .data(histogram)
-               .enter()
-               .append('g')
-               .classed('bar', true)
-               .attr('transform', (d) => `translate(${x(d.x)},${y(d.y)})`);
+      .data(histogram)
+      .enter()
+      .append('g')
+      .classed('bar', true)
+      .attr('transform', (d) => `translate(${x(d.x)},${y(d.y)})`);
 
     bar.append('rect')
       .attr({
         x: 1,
         width: x(histogram[0].dx) - this.margin.left - 1,
-        height: (d) => this.height - this.margin.bottom - y(d.y) 
-      });
-
+        height: (d) => this.height - this.margin.bottom - y(d.y)
+      })
+      .classed('histogram-bar', true);
 
     bar.append('text')
       .text((d) => d[0].EntityName)
       .attr({
         transform: (d) => `translate(0, ${this.height - this.margin.bottom - y(d.y) + 7}) rotate(60)`
       });
-
-    require('./chapter5.css');
   }
 
   pie(name) {
-    let data = this.data;
-    let filtered = data.filter((d) => d.EntityName === name);
+    let filtered = this.data.filter((d) => d.EntityName === name);
     let perDonor = helpers.binPerName(filtered, (d) => d.DonorName);
     let pie = d3.layout.pie()
       .value((d) => d.length)(perDonor);
@@ -221,7 +219,6 @@ export default class PoliticalDonorChart extends BasicChart {
   }
 
   /**
-   * Incomplete — the hover state is weird.
    * @param  {[type]} filterString =             ' MP' [description]
    * @return {[type]}              [description]
    */
@@ -230,8 +227,11 @@ export default class PoliticalDonorChart extends BasicChart {
     let nameId = helpers.nameId(helpers.allUniqueNames(filtered), (d) => d);
     let uniques = helpers.allUniqueNames(filtered);
     let matrix = helpers.connectionMatrix(filtered); 
-
-    let nodes = uniques.map((name) => new Object({name: name}))
+    let nodes = uniques.map((name) => new Object({
+      name: name,
+      totalDonated: matrix[nameId(name)].reduce((last, curr) => last + curr, 0),
+      totalReceived: matrix.reduce((last, curr) => last + curr[nameId(name)], 0)
+    }));
     let links = filtered.map((d) => {
       return {
         source: nameId(d.DonorName),
@@ -245,7 +245,10 @@ export default class PoliticalDonorChart extends BasicChart {
     let force = d3.layout.force()
                .nodes(nodes)
                .links(links)
-               .gravity(0.2)
+               .charge((node) => {
+                 return node.totalDonated ? -500 : 0;
+               })
+               .gravity(0.05)
                .size([this.width, this.height]);
 
     force.start();
@@ -262,6 +265,7 @@ export default class PoliticalDonorChart extends BasicChart {
     force.start();
 
     let given = d3.scale.linear()
+        .domain(d3.extent(matrix, (d) => d3.max(d)))
        .range([2, 35]);
 
     let link = this.chart.selectAll('line')
@@ -270,18 +274,34 @@ export default class PoliticalDonorChart extends BasicChart {
         .append('line')
         .classed('link', true);
 
-    let node = this.chart.selectAll('circle')
+    let node = this.chart.selectAll('.node')
       .data(nodes)
       .enter()
-        .append('circle')
+        .append((d) => {
+          return document.createElementNS('http://www.w3.org/2000/svg', d.totalDonated > 0 ? 'circle' : 'rect');
+        })
+        .classed('node', true);
+
+    this.chart.selectAll('circle.node')
         .attr({
-          r: (d) => weight(d.weight),
+          r: (d) => d.totalDonated ? given(d.totalDonated) : 35,
           fill: (d) => helpers.color(d.index),
           class: (d) => 'name_' + nameId(d.name)
         })
         .classed('node', true)
-        .on('mouseover', (d) => highlight(d, uniques, given, matrix, nameId))
-        .on('mouseout', (d) => dehighlight(d, weight));
+        .on('mouseover', (d) => highlight(d))
+        .on('mouseout', (d) => dehighlight(d));
+
+    this.chart.selectAll('rect.node')
+        .attr({
+          width: (d) => given(d.totalReceived),
+          height: (d) => given(d.totalReceived),
+          fill: (d) => helpers.color(d.index),
+          class: (d) => 'name_' + nameId(d.name)
+        })
+        .classed('node', true)
+        .on('mouseover', (d) => highlight(d))
+        .on('mouseout', (d) => dehighlight(d));
 
     node.call(helpers.tooltip((d) => d.name, this.chart));
     node.call(force.drag);
@@ -292,29 +312,29 @@ export default class PoliticalDonorChart extends BasicChart {
       .attr('x2', (d) => d.target.x)
       .attr('y2', (d) => d.target.y);
 
-      node.attr('cx', (d) => d.x)
+      this.chart.selectAll('circle.node').attr('cx', (d) => d.x)
       .attr('cy', (d) => d.y);
+
+      this.chart.selectAll('rect.node').attr('x', function(d) {
+        return d.x - this.getBBox().width / 2;
+      })
+      .attr('y', function(d) {
+        return d.y - this.getBBox().height / 2
+      });
     });
 
 
-    function highlight (d, uniques, given, matrix, nameId) {
-      given.domain(d3.extent(matrix[nameId(d.name)])); // TODO fix this scale
-      uniques.map((name) => {
-        let amount = matrix[nameId(d.name)][nameId(name)];
-        if (name !== d.name) {
-          d3.selectAll('circle.name_' + nameId(name))
-          .transition()
-          .attr('r', given(amount));
-        }
-      });
+    function highlight (d) {
+      if (d.totalReceived === 0) { // Is a donor
+
+      } else {
+
+      }
+
     }
 
     function dehighlight (d, weight) {
-      d3.selectAll('.node')
-      .transition()
-      .attr('r', (d) => {
-        return weight(d.weight)
-      });
+
     }
 
     require('./chapter5.css');
