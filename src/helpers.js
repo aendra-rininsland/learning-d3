@@ -105,7 +105,7 @@ export function tooltip (text, chart) {
 }
 
 export function connectionMatrix (data) {
-  let nameIds = nameId(data, (d) => d.DonorName );
+  let nameIds = nameId(allUniqueNames(data), (d) => d );
   let uniques = nameIds.domain();
   let matrix = d3.range(uniques.length).map(() => d3.range(uniques.length).map(() =>  0));
   data.forEach((d) => {
@@ -131,7 +131,6 @@ export function makeTree(data, filterByDonor, name1, name2) {
           let value = Number(curr.Value.replace(/[^\d\.]*/g, ''));
           return value ? last + value : last;
       }, 0);
-      console.dir(donatedTo);
 
     // let givenTo = binPerName(data.filter((d) => filterByDonor(d, name)), (d) => {
     //   return d.EntityName;
@@ -141,7 +140,6 @@ export function makeTree(data, filterByDonor, name1, name2) {
       name: name,
       donated: donationsValue,
       children: donatedTo.map((d) => {
-        console.log(d, typeof d);
         return {
           name: name2(d),
           count: 0,

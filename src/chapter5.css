@@ -8,10 +8,10 @@
   font-size: 0.75em;
 }
 
-rect {
+/*rect {
   fill: steelblue;
   shape-rendering: crispEdges;
-}
+}*/
 
 .bar text {
   font-size: 0.4em;
@@ -51,4 +51,19 @@ path.highlighted {
 path.link {
   fill: none;
   stroke: lightgrey;
+}
+
+
+path.partition {
+  stroke: white;
+  stroke-width: 1;
+}
+
+
+.name text {
+  font-size: 1.5em;
+}
+
+.name rect {
+  fill: white;
 }

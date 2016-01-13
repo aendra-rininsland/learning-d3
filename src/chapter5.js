@@ -226,23 +226,19 @@ export default class PoliticalDonorChart extends BasicChart {
    * @return {[type]}              [description]
    */
   force(filterString = ' MP') {
-    let data = this.data;
-    let filtered = data.filter((d) => d.EntityName.match(filterString) );
-    let nameId = helpers.nameId(filtered, (d) => d.DonorName);
-    let nameIdsMPs = helpers.nameId(filtered, (d) => d.EntityName);
-    nameId.domain(nameId.domain().concat(nameIdsMPs.domain()));
-    nameId.range(d3.range(nameId.domain().length));
-    let uniques = nameId.domain();
-    let matrix = helpers.connectionMatrix(data); 
+    let filtered = this.data.filter((d) => d.EntityName.match(filterString) );
+    let nameId = helpers.nameId(helpers.allUniqueNames(filtered), (d) => d);
+    let uniques = helpers.allUniqueNames(filtered);
+    let matrix = helpers.connectionMatrix(filtered); 
 
-    let nodes = uniques.map((name) => { return {name: name}; })
-
+    let nodes = uniques.map((name) => new Object({name: name}))
     let links = filtered.map((d) => {
-      console.dir(matrix[nameId(d.EntityName)][nameId(d.DonorName)]);
       return {
         source: nameId(d.DonorName),
+        sourceName: d.DonorName,
         target: nameId(d.EntityName),
-        count: matrix[nameId(d.DonorName)][nameId(d.EntityName)]
+        targetName: d.EntityName,
+        amountDonated: matrix[nameId(d.DonorName)][nameId(d.EntityName)]
       }
     });
 
@@ -255,14 +251,14 @@ export default class PoliticalDonorChart extends BasicChart {
     force.start();
 
     let weight = d3.scale.linear()
-      .domain(d3.extent(nodes.map((d) =>d.weight)))
+      .domain(d3.extent(nodes.map((d) => d.weight)))
       .range([5, 30]);
 
     let distance = d3.scale.linear()
        .domain(d3.extent(d3.merge(matrix)))
        .range([300, 100]);
 
-    force.linkDistance((d) => distance(d.count));
+    force.linkDistance((d) => distance(d.amountDonated));
     force.start();
 
     let given = d3.scale.linear()
@@ -278,14 +274,14 @@ export default class PoliticalDonorChart extends BasicChart {
       .data(nodes)
       .enter()
         .append('circle')
-        .classed('node', true)
         .attr({
           r: (d) => weight(d.weight),
           fill: (d) => helpers.color(d.index),
           class: (d) => 'name_' + nameId(d.name)
         })
-       .on('mouseover', (d) => highlight(d, uniques, given, matrix, nameId))
-       .on('mouseout', (d) => dehighlight(d, weight));
+        .classed('node', true)
+        .on('mouseover', (d) => highlight(d, uniques, given, matrix, nameId))
+        .on('mouseout', (d) => dehighlight(d, weight));
 
     node.call(helpers.tooltip((d) => d.name, this.chart));
     node.call(force.drag);
@@ -302,15 +298,13 @@ export default class PoliticalDonorChart extends BasicChart {
 
 
     function highlight (d, uniques, given, matrix, nameId) {
-      given.domain(d3.extent(matrix[nameId(d.name)]));
-      console.dir(d3.extent(matrix[nameId(d.name)]));
+      given.domain(d3.extent(matrix[nameId(d.name)])); // TODO fix this scale
       uniques.map((name) => {
-        let count = matrix[nameId(d.name)][nameId(name)];
+        let amount = matrix[nameId(d.name)][nameId(name)];
         if (name !== d.name) {
           d3.selectAll('circle.name_' + nameId(name))
-          .classed('unconnected', true)
           .transition()
-          .attr('r', given(count));
+          .attr('r', given(amount));
         }
       });
     }
@@ -318,7 +312,9 @@ export default class PoliticalDonorChart extends BasicChart {
     function dehighlight (d, weight) {
       d3.selectAll('.node')
       .transition()
-      .attr('r', (d) => weight(d.weight));
+      .attr('r', (d) => {
+        return weight(d.weight)
+      });
     }
 
     require('./chapter5.css');
@@ -334,14 +330,13 @@ export default class PoliticalDonorChart extends BasicChart {
       (d) => d.EntityName,
       (d) => d.EntityName || '');
 
-    console.dir(tree.children);
     tree.children = tree.children.filter((d) => d.children.length > 1)
 
     let diagonal = d3.svg.diagonal.radial()
       .projection((d) => [d.y, d.x / 180 * Math.PI]);
 
     let layout = d3.layout.tree()
-        .size([360, this.width / 4]);
+        .size([360, this.width / 5]);
     let nodes = layout.nodes(tree);
     let links = layout.links(nodes);
 
@@ -363,14 +358,183 @@ export default class PoliticalDonorChart extends BasicChart {
 
     node.append('circle')
       .attr('r', 4.5)
-      .attr('fill', (d) => helpers.color(d.name));
+      .attr('fill', (d) => helpers.color(d.name))
+      .on('mouseover', function(d) {
+        d3.select(this.nextSibling).style('visibility', 'visible');
+      })
+      .on('mouseout', function(d) {
+        d3.select(this.nextSibling).style('visibility', 'hidden');
+      });
 
     node.append('text')
       .attr('dy', '.31em')
       .attr('text-anchor', (d) => d.x < 180 ? 'start' : 'end')
       .attr('transform', (d) => d.x < 180 ? 'translate(8)' : 'rotate(180)translate(-8)')
-      .text((d) => d.name)
-      .style('font-size', (d) => d.depth > 1 ? '0.6em' : '0.9em');
+      .text((d) => d.depth > 1 ? d.name : d.name.substr(0, 15) + (d.name.length > 15 ? '...' : ''))
+      .style({
+        'font-size': (d) => d.depth > 1 ? '0.6em' : '0.9em',
+        'visibility': (d) => d.depth > 0 ? 'hidden' : 'visible'
+      });
+
+    require('./chapter5.css');
+  }
+
+  partition(filterString = ' MP') {
+    let filtered = this.data.filter((d) => d.EntityName.match(filterString) );
+    let tree = helpers.makeTree(filtered,
+      (d, name) => d.DonorName === name,
+      (d) => d.EntityName,
+      (d) => d.EntityName || '');
+
+    helpers.fixateColors(filtered);
+
+    let partition = d3.layout.partition()
+      .value((d) => d.parent.donated)
+      .sort((a, b) => d3.descending(a.parent.donated, b.parent.donated))
+      .size([2 * Math.PI, 300]);
+
+    let nodes = partition.nodes(tree);
+    let arc = d3.svg.arc()
+      .innerRadius((d) => d.y)
+      .outerRadius((d) => d.depth ? d.y + d.dy / d.depth : 0);
+
+    nodes = nodes.map((d) => {
+      d.startAngle = d.x;
+      d.endAngle = d.x + d.dx;
+
+      return d;
+    });
+
+    nodes = nodes.filter((d) => d.depth);
+
+    let chart = this.chart.attr('transform', `translate(${this.width / 2}, ${this.height / 2})`);
+
+    let node = chart.selectAll('g')
+      .data(nodes)
+      .enter()
+      .append('g');
+
+    node.append('path')
+    .classed('partition', true)
+    .attr({
+      d: arc,
+      fill: (d) => helpers.color(d.name)
+    });
+
+    node.call(helpers.tooltip((d) => d.name, chart));
+
+    require('./chapter5.css');
+  }
+
+  pack(filterString = ' MP') {
+    let filtered = this.data.filter((d) => d.EntityName.match(filterString) );
+    let tree = helpers.makeTree(filtered,
+      (d, name) => d.DonorName === name,
+      (d) => d.EntityName,
+      (d) => d.EntityName || '');
+
+    helpers.fixateColors(filtered);
+
+    let pack = d3.layout.pack()
+            .padding(5)
+            .size([this.width / 1.5, this.height / 1.5])
+            .value(function (d) { return d.parent.donated; });
+
+    let nodes = pack.nodes(tree);
+
+    this.chart.append('g')
+      .attr('transform', 'translate(100, 100)')
+      .selectAll('g')
+      .data(nodes)
+      .enter()
+      .append('circle')
+      .attr({
+        r: (d) => d.r,
+        cx: (d) => d.x,
+        cy: (d) => d.y
+      })
+      .attr('fill', (d) => helpers.color(d.name))
+      .call(helpers.tooltip((d) => d.name));
+  }
+
+  treemap(filterString = ' MP') {
+    let filtered = this.data.filter((d) => d.EntityName.match(filterString) );
+    let tree = helpers.makeTree(filtered,
+      (d, name) => d.DonorName === name,
+      (d) => d.EntityName,
+      (d) => d.EntityName || '');
+
+    helpers.fixateColors(filtered);
+
+    let treemap = d3.layout.treemap()
+      .size([this.width, this.height])
+      .padding(3)
+      .value((d) => d.parent.donated)
+      .sort(d3.ascending);
+
+    let nodes = treemap.nodes(tree)
+      .filter((d) => d.depth);
+
+    let node = this.chart.selectAll('g')
+      .data(nodes)
+      .enter()
+      .append('g')
+      .classed('node', true)
+      .attr('transform', (d) => `translate(${d.x},${d.y})`);
+
+    node.append('rect')
+      .attr({
+        width: (d) => d.dx,
+        height: (d) => d.dy,
+        fill: (d) => helpers.color(d.name)
+      });
+    console.dir(helpers.color.domain());
+    let leaves = node.filter((d) => d.depth > 1);
+
+    leaves.append('text')
+      .text((d) => {
+        let name = d.name.match(/([^\s]+\s[^\s]+) MP$/).shift().split(' ');
+        return `${name[0].substr(0, 1)}. ${name[1]}`;
+      })
+      .attr('text-anchor', 'middle')
+      .attr('transform', function (d) {
+        let box = this.getBBox();
+        let transform = `translate(${d.dx / 2},${d.dy / 2 + box.height / 2})`;
+        if (d.dx < box.width && d.dx > box.height && d.dy > box.width) {
+          transform += 'rotate(-90)';
+        } else if (d.dx < box.width || d.dy < box.height) {
+          d3.select(this).remove();
+        }
+
+        return transform;
+      });
+
+      leaves.call(helpers.tooltip((d) => d.parent.name, this.chart));
+
+      leaves.on('mouseover', (d) => {
+        let belongsTo = d.parent.name;
+        console.log(d);
+        this.chart.selectAll('.node')
+          .transition()
+          .style('opacity', (d) => {
+            if (d.depth > 1 && d.parent.name !== belongsTo) {
+              return 0.3;
+            }
+
+            if (d.depth == 1 && d.name !== belongsTo) {
+              return 0.3;
+            }
+
+            return 1;
+          });
+      })
+      .on('mouseout', () => {
+        d3.selectAll('.node')
+          .transition()
+          .style('opacity', 1);
+      })
+      .on('click', (d) => alert(d.name));
+
     require('./chapter5.css');
   }
 }
