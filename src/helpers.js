@@ -33,7 +33,7 @@ export const color = d3.scale.ordinal().range(['#EF3B39', '#FFCD05', '#69C9CA', 
 
 export function fixateColors (data) {
   color.domain(uniques(data, (d) => d.from));
-} 
+}
 
 export function arcLabels(text, radius) {
   return function (selection) {
