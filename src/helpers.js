@@ -32,7 +32,7 @@ export const color = d3.scale.ordinal().range(['#EF3B39', '#FFCD05', '#69C9CA', 
   '#DBD6B6']);
 
 export function fixateColors (data) {
-  color.domain(uniques(data, (d) => d.from));
+  color.domain(uniques(data, (d) => d.DonorName));
 }
 
 export function arcLabels(text, radius) {
@@ -91,13 +91,13 @@ export function tooltip (text, chart) {
     }
 
     function mousemove () {
-        var mouse = d3.mouse(chart.node());
+        let mouse = d3.mouse(chart.node());
         d3.select('#nameTooltip')
         .attr('transform', `translate(${mouse[0] + 15},${mouse[1] + 20})`);
     }
 
     function mouseout () {
-        var path = d3.select(this);
+        let path = d3.select(this);
         path.classed('highlighted', false);
         d3.select('#nameTooltip').remove();
     }
@@ -132,10 +132,6 @@ export function makeTree(data, filterByDonor, name1, name2) {
           return value ? last + value : last;
       }, 0);
 
-    // let givenTo = binPerName(data.filter((d) => filterByDonor(d, name)), (d) => {
-    //   return d.EntityName;
-    // });
-
     return {
       name: name,
       donated: donationsValue,
@@ -148,7 +144,6 @@ export function makeTree(data, filterByDonor, name1, name2) {
       })
     };
   });
-  // console.dir(tree.children.filter((d) => d.name === 'Golden Tours'));
 
   return tree;
 }

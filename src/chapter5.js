@@ -77,13 +77,13 @@ export default class PoliticalDonorChart extends BasicChart {
       .startAngle((d) => d.startAngle)
       .endAngle((d) => d.endAngle);
 
-    helpers.fixateColors(data);
+    helpers.fixateColors(filtered);
 
     let slice = this.chart.selectAll('.slice')
-               .data(pie)
-               .enter()
-               .append('g')
-               .attr('transform', 'translate(300, 300)');
+      .data(pie)
+      .enter()
+      .append('g')
+      .attr('transform', 'translate(300, 300)');
 
     slice.append('path')
       .attr({
@@ -98,7 +98,7 @@ export default class PoliticalDonorChart extends BasicChart {
     let time = d3.time.format('%d/%m/%y');
     let data = this.data;
     let extent = d3.extent(data.map((d) => time.parse(d.ReceivedDate)));
-    let timeBins = d3.time.days(extent[0], extent[1], 12);
+    let timeBins = d3.time.days(extent[0], extent[1], 14);
 
     let perName = helpers.binPerName(data, (d) => d.EntityName);
     let timeBinned  = perName.map((nameLayer) => {
@@ -160,11 +160,9 @@ export default class PoliticalDonorChart extends BasicChart {
       .attr('d', (d) => area(d.values))
       .style('fill', (d, i) => helpers.color(i))
       .call(helpers.tooltip((d) => d.to, this.chart));
-
-    require('./chapter5.css');
   }
 
-  chord(filterString, mpWidth) {
+  chord(filterString) {
     let data = this.data;
     let filtered = data.filter((d) => d.EntityName.match(filterString || ' MP') );
     let uniqueMPs = helpers.uniques(filtered, (d) => d.EntityName);
@@ -203,7 +201,7 @@ export default class PoliticalDonorChart extends BasicChart {
       .attr('d', arc)
       .attr('fill', (d) => helpers.color(d.index));
 
-    group.call(helpers.arcLabels((d) => uniques[d.index], () => outerRadius+10));
+    group.call(helpers.arcLabels((d) => uniques[d.index], () => outerRadius + 10));
 
     diagram.append('g')
            .classed('chord', true)
@@ -214,7 +212,7 @@ export default class PoliticalDonorChart extends BasicChart {
            .attr('d', d3.svg.chord().radius(innerRadius))
            .attr('fill', (d) => helpers.color(d.target.index));
 
-    this.chart.selectAll('text').filter(function(d) { return d3.select(this).text().match(filterString)})
+    this.chart.selectAll('text').filter(function() { return d3.select(this).text().match(filterString); })
       .style('font-weight', 'bold');
   }
 
@@ -243,19 +241,13 @@ export default class PoliticalDonorChart extends BasicChart {
     });
 
     let force = d3.layout.force()
-               .nodes(nodes)
-               .links(links)
-               .charge((node) => {
-                 return node.totalDonated ? -500 : 0;
-               })
-               .gravity(0.05)
-               .size([this.width, this.height]);
+      .nodes(nodes)
+      .links(links)
+      .charge((node) => node.totalDonated ? -500 : 0)
+      .gravity(0.05)
+      .size([this.width, this.height]);
 
     force.start();
-
-    let weight = d3.scale.linear()
-      .domain(d3.extent(nodes.map((d) => d.weight)))
-      .range([5, 30]);
 
     let distance = d3.scale.linear()
        .domain(d3.extent(d3.merge(matrix)))
@@ -283,25 +275,21 @@ export default class PoliticalDonorChart extends BasicChart {
         .classed('node', true);
 
     this.chart.selectAll('circle.node')
-        .attr({
-          r: (d) => d.totalDonated ? given(d.totalDonated) : 35,
-          fill: (d) => helpers.color(d.index),
-          class: (d) => 'name_' + nameId(d.name)
-        })
-        .classed('node', true)
-        .on('mouseover', (d) => highlight(d))
-        .on('mouseout', (d) => dehighlight(d));
+      .attr({
+        r: (d) => given(d.totalDonated),
+        fill: (d) => helpers.color(d.index),
+        class: (d) => 'name_' + nameId(d.name)
+      })
+      .classed('node', true);
 
     this.chart.selectAll('rect.node')
-        .attr({
-          width: (d) => given(d.totalReceived),
-          height: (d) => given(d.totalReceived),
-          fill: (d) => helpers.color(d.index),
-          class: (d) => 'name_' + nameId(d.name)
-        })
-        .classed('node', true)
-        .on('mouseover', (d) => highlight(d))
-        .on('mouseout', (d) => dehighlight(d));
+      .attr({
+        width: (d) => given(d.totalReceived),
+        height: (d) => given(d.totalReceived),
+        fill: (d) => helpers.color(d.index),
+        class: (d) => 'name_' + nameId(d.name)
+      })
+      .classed('node', true);
 
     node.call(helpers.tooltip((d) => d.name, this.chart));
     node.call(force.drag);
@@ -322,27 +310,10 @@ export default class PoliticalDonorChart extends BasicChart {
         return d.y - this.getBBox().height / 2
       });
     });
-
-
-    function highlight (d) {
-      if (d.totalReceived === 0) { // Is a donor
-
-      } else {
-
-      }
-
-    }
-
-    function dehighlight (d, weight) {
-
-    }
-
-    require('./chapter5.css');
   }
 
   tree(filterString = ' MP') {
-    let data = this.data;
-    let filtered = data.filter((d) => d.EntityName.match(filterString) );
+    let filtered = this.data.filter((d) => d.EntityName.match(filterString) );
     helpers.fixateColors(filtered);
 
     let tree = helpers.makeTree(filtered,
@@ -395,8 +366,52 @@ export default class PoliticalDonorChart extends BasicChart {
         'font-size': (d) => d.depth > 1 ? '0.6em' : '0.9em',
         'visibility': (d) => d.depth > 0 ? 'hidden' : 'visible'
       });
+  }
 
-    require('./chapter5.css');
+  cluster(filterString = ' MP') {
+    let filtered = this.data.filter((d) => d.EntityName.match(filterString) );
+    helpers.fixateColors(filtered);
+
+    let tree = helpers.makeTree(filtered,
+      (d, name) => d.DonorName === name,
+      (d) => d.EntityName,
+      (d) => d.EntityName || '');
+
+    let diagonal = d3.svg.diagonal().projection((d) => [d.y, d.x]);
+
+    let cluster = d3.layout.cluster()
+      .size([this.height, this.width - 150])
+      .sort((a, b) => d3.descending(a.amountDonated, b.amountDonated));
+
+    let nodes = cluster.nodes(tree),
+      links = cluster.links(nodes);
+
+    this.chart.selectAll('.link')
+      .data(links)
+      .enter()
+      .append('path')
+      .classed('link', true)
+      .attr('d', diagonal);
+
+    let node = this.chart.selectAll('.node')
+      .data(nodes)
+      .enter()
+      .append('g')
+      .classed('node', true)
+      .attr('transform', (d) => `translate(${d.y}, ${d.x})`);
+
+    node.append('circle')
+      .attr({
+        r: 5,
+        fill: (d) => helpers.color(d.name)
+      });
+
+    node.append('text')
+      .text((d) => d.name)
+      .attr('dx', (d) => d.children.length ? -8 : 8)
+      .attr('dy', (d) => d.depth > 1 ? 3 : 5)
+      .attr('text-anchor', (d) => d.children.length ? 'end' : 'start')
+      .style('font-size', (d) => d.depth > 1 ? '0.8em' : '1.1em');
   }
 
   partition(filterString = ' MP') {
@@ -414,6 +429,7 @@ export default class PoliticalDonorChart extends BasicChart {
       .size([2 * Math.PI, 300]);
 
     let nodes = partition.nodes(tree);
+
     let arc = d3.svg.arc()
       .innerRadius((d) => d.y)
       .outerRadius((d) => d.depth ? d.y + d.dy / d.depth : 0);
@@ -442,8 +458,6 @@ export default class PoliticalDonorChart extends BasicChart {
     });
 
     node.call(helpers.tooltip((d) => d.name, chart));
-
-    require('./chapter5.css');
   }
 
   pack(filterString = ' MP') {
@@ -508,7 +522,7 @@ export default class PoliticalDonorChart extends BasicChart {
         height: (d) => d.dy,
         fill: (d) => helpers.color(d.name)
       });
-    console.dir(helpers.color.domain());
+
     let leaves = node.filter((d) => d.depth > 1);
 
     leaves.append('text')
@@ -533,7 +547,6 @@ export default class PoliticalDonorChart extends BasicChart {
 
       leaves.on('mouseover', (d) => {
         let belongsTo = d.parent.name;
-        console.log(d);
         this.chart.selectAll('.node')
           .transition()
           .style('opacity', (d) => {
@@ -554,7 +567,5 @@ export default class PoliticalDonorChart extends BasicChart {
           .style('opacity', 1);
       })
       .on('click', (d) => alert(d.name));
-
-    require('./chapter5.css');
   }
 }
