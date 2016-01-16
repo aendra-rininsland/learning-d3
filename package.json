@@ -27,6 +27,8 @@
   },
   "homepage": "https://github.com/aendrew/learning-d3#readme",
   "dependencies": {
+    "body-parser": "^1.14.2",
+    "express": "^4.13.3",
     "lodash": "^3.10.1",
     "topojson": "^1.6.19"
   },
