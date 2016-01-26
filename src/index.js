@@ -11,3 +11,7 @@ window.d3 = undefined;
 // new PoliticalDonorChart('partition', 'Miliband');
 // new PoliticalDonorChart('pack');
 // new PoliticalDonorChart('treemap', 'Miliband');
+
+import VoronoiAirports from './voronoi-airports';
+
+new VoronoiAirports('39.800774, -43.230698');

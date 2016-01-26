@@ -65,8 +65,6 @@ module.exports = [
             exclude: 'node_modules',
             loader: 'babel'
           },
-          // This nifty bit of magic right here allows us to load entire JSON files
-          // synchronously using `require`, just like in NodeJS.
           {
             test: /\.json$/,
             loader: 'json-loader'

@@ -77,3 +77,9 @@
 .bar.selecting {
   fill-opacity: 0.9;
 }
+
+.voronoi {
+  fill: none;
+  stroke: brown;
+  stroke-width: .5px;
+}

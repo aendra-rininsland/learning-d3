@@ -54,6 +54,21 @@ export class GeoDemo extends BasicChart {
       addRenditions(airports, renditions);
     });
 
+    function draw (sea, land, cultural) {
+      addToMap(sea, 'ne_50m_ocean')
+      .classed('ocean', true);
+      addToMap(land, 'ne_50m_land')
+      .classed('land', true);
+      // addToMap(sea, 'ne_50m_rivers_lake_centerlines')
+      // .classed('river', true);
+      addToMap(cultural, 'ne_50m_admin_0_boundary_lines_land')
+      .classed('boundary', true);
+      // addToMap(cultural, 'ne_10m_urban_areas')
+      // .classed('urban', true);
+
+      zoomable();
+    }
+
     function zoomable() {
       // Slow way
       // chart.call(d3.behavior.zoom()
@@ -100,27 +115,12 @@ export class GeoDemo extends BasicChart {
       .attr('d', d3.geo.path().projection(projection));
     }
 
-    function draw (sea, land, cultural) {
-      addToMap(sea, 'ne_50m_ocean')
-      .classed('ocean', true);
-      addToMap(land, 'ne_50m_land')
-      .classed('land', true);
-      // addToMap(sea, 'ne_50m_rivers_lake_centerlines')
-      // .classed('river', true);
-      addToMap(cultural, 'ne_50m_admin_0_boundary_lines_land')
-      .classed('boundary', true);
-      // addToMap(cultural, 'ne_10m_urban_areas')
-      // .classed('urban', true);
-
-      zoomable();
-    }
-
     function addRenditions(_airports, renditions) {
       let airports = {},
         routes;
 
-      d3.csv.parseRows(_airports).forEach(function (airport) {
-        var id = airport[4];
+      d3.csv.parseRows(_airports).forEach((airport) => {
+        let id = airport[4];
         airports[id] = {
           lat: airport[6],
           lon: airport[7]

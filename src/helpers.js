@@ -147,3 +147,29 @@ export function makeTree(data, filterByDonor, name1, name2) {
 
   return tree;
 }
+
+/**
+ * Returns whether a point is inside a polygon.
+ * The following function is taken from https://github.com/substack/point-in-polygon/
+ *
+ * Based on a ray-casting algorithm from http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+ *
+ * @param  {Array}  point             An array with x and y coordinates of a point. Can also be lon/lat.
+ * @param  {Array<Array<Number>>}  polygon    The polygon as an array of arrays containing x and y coordinates.
+ * @return {Boolean}                  Whether the point is inside the polygon or not.
+ */
+export function isInside(point, polygon) {
+  let x = Number(point[0]), y = Number(point[1]);
+
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      let xi = polygon[i][0], yi = polygon[i][1];
+      let xj = polygon[j][0], yj = polygon[j][1];
+
+      let intersect = ((yi > y) != (yj > y))
+          && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
