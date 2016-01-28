@@ -14,4 +14,4 @@ window.d3 = undefined;
 
 import VoronoiAirports from './voronoi-airports';
 
-new VoronoiAirports('39.800774, -43.230698');
+new VoronoiAirports('41.961571, -87.959659');

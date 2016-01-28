@@ -34,13 +34,13 @@ export default class {
           .pointRadius(0.1);
 
 
-      let voronoi = d3.geom.voronoi(this.airports.map((airport) => [airport[7], airport[6]]).map(projection)).filter((d, i) => {
+      let voronoi = d3.geom.voronoi(
+        this.airports.map((airport) => {
+          let projected = projection([airport[7], airport[6]]);
+          return [projected[0], projected[1], airport[2], airport[3], airport[4] ]
+        }))
+        .filter((d) => d);
 
-        console.log(typeof d);
-        if (typeof d !== 'undefined') {
-          return d;
-        }
-      });
       svg.append("path")
           .datum(voronoi)
           .attr("class", "voronoi")
@@ -48,18 +48,11 @@ export default class {
 
       voronoi.forEach((v, i) => {
         if (isInside(projection([this.location[1], this.location[0]]), v)) {
-          console.log(v, i);
-          console.log(this.airports[i]);
-          console.log(projection([this.airports[i][7], this.airports[i][6]]));
-          let airport = this.airports.filter((d) => /*console.log(v.point, Number(d[7]), Number(d[6]), projection([Number(d[7]), Number(d[6])])) &&*/ v.point === projection([Number(d[7]), Number(d[6])]));
-          console.dir(airport);
           svg.append("path")
               .datum([v])
               .attr("class", "voronoi-here")
               .attr('fill' ,'green')
               .attr("d", (d, i) => { return "M" + d.map(function(d) { return d.join("L"); }).join("ZM") + "Z"; });
-
-          // svg.append('circle').classed('here-voronoi', true).attr('fill', 'green').attr('cx', v.point[0]).attr('cy', v.point[1]).attr('r', 10);
         }
       });
 
