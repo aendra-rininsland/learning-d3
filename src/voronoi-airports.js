@@ -1,6 +1,7 @@
 let d3 = require('d3');
+let topojson = require('topojson');
+
 import {isInside} from './helpers';
-import topojson from 'topojson';
 
 export default class {
   name = String;
@@ -27,7 +28,6 @@ export default class {
       let boundaries = require('earth-topojson/110m.json');
 
       this.airports = d3.csv.parseRows(airportData);
-
 
       let path = d3.geo.path()
           .projection(projection)
