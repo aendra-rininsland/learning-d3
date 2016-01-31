@@ -173,3 +173,27 @@ export function isInside(point, polygon) {
 
   return inside;
 }
+
+
+export function nearestVoronoi(location, points) {
+  let nearestPoint = {};
+  let projection = d3.geo.equirectangular();
+
+  location = location.split(/,\s?/);
+
+  let voronoi = d3.geom.voronoi(
+    points.map((point) => {
+      let projected = projection([point.longitude, point.latitude]);
+      return [projected[0], projected[1], point];
+    }))
+    .filter((d) => d);
+
+  voronoi.forEach((region) => {
+    if (isInside(projection([location[1], location[0]]), region)) {
+      nearestPoint = region.point[2];
+    }
+  });
+
+  if (nearestPoint === {}) throw new Error('Nearest not findable');
+  else return nearestPoint;
+}
