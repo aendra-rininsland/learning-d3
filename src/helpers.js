@@ -1,4 +1,4 @@
-let d3 = require('d3');
+var d3 = require('d3');
 
 export function uniques(data, name) {
   let uniques = [];
@@ -154,9 +154,9 @@ export function makeTree(data, filterByDonor, name1, name2) {
  *
  * Based on a ray-casting algorithm from http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
  *
- * @param  {Array}  point             An array with x and y coordinates of a point. Can also be lon/lat.
+ * @param  {Array}                 point      An array with x and y coordinates of a point. Can also be lon/lat.
  * @param  {Array<Array<Number>>}  polygon    The polygon as an array of arrays containing x and y coordinates.
- * @return {Boolean}                  Whether the point is inside the polygon or not.
+ * @return {Boolean}                          Whether the point is inside the polygon or not.
  */
 export function isInside(point, polygon) {
   let x = Number(point[0]), y = Number(point[1]);
@@ -174,9 +174,14 @@ export function isInside(point, polygon) {
   return inside;
 }
 
-
+/**
+ * Find the nearest point using Voronoi geom
+ * @param  {String}               location Comma-separated lat/lng string
+ * @param  {Array<Array<Number>>} points   An array of arrays containing points
+ * @return {Object|Void}                   The nearest point to location. Throws Error if point not found.
+ */
 export function nearestVoronoi(location, points) {
-  let nearestPoint = {};
+  let nearest = {};
   let projection = d3.geo.equirectangular();
 
   location = location.split(/,\s?/);
@@ -190,10 +195,13 @@ export function nearestVoronoi(location, points) {
 
   voronoi.forEach((region) => {
     if (isInside(projection([location[1], location[0]]), region)) {
-      nearestPoint = region.point[2];
+      nearest = {
+        point: region.point[2],
+        region: region
+      };
     }
   });
 
-  if (nearestPoint === {}) throw new Error('Nearest not findable');
-  else return nearestPoint;
+  if (nearest === {}) throw new Error('Nearest not findable');
+  else return nearest;
 }
