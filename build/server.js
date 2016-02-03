@@ -104,11 +104,10 @@
 
 	    var airport = (0, _helpers.nearestVoronoi)(location, points);
 	    var canvasOutput = drawCanvasMap(location, points);
-
-	    res.send('<!doctype html>\n      <html>\n      <head>\n        <title>Your nearest airport is: ' + airport.name + '</title>\n      </head>\n      <body style="text-align: center;">\n        <h1>The airport closest to your location is: ' + airport.name + '</h1>\n        <img src="' + canvasOutput + '" />\n        <table style="margin: 0 auto;">\n        <tr>\n          ' + Object.keys(airport).map(function (v) {
+	    res.send('<!doctype html>\n      <html>\n      <head>\n        <title>Your nearest airport is: ' + airport.point.name + '</title>\n      </head>\n      <body style="text-align: center;">\n        <h1>The airport closest to your location is: ' + airport.point.name + '</h1>\n        <img style="width: 480px; height: 250px;" src="' + canvasOutput + '" />\n        <table style="margin: 0 auto;">\n        <tr>\n          ' + Object.keys(airport.point).map(function (v) {
 	      return '<th>' + v + '</th>';
-	    }).join('') + '\n        </tr>\n        <tr>\n          ' + Object.keys(airport).map(function (v) {
-	      return '<td>' + airport[v] + '</td>';
+	    }).join('') + '\n        </tr>\n        <tr>\n          ' + Object.keys(airport.point).map(function (v) {
+	      return '<td>' + airport.point[v] + '</td>';
 	    }).join('') + '\n        </tr>\n      </body>\n      </html>');
 	  })['catch'](function (err) {
 	    return console.log(err);
@@ -121,22 +120,27 @@
 
 	function drawCanvasMap(location, airports) {
 	  var Canvas = __webpack_require__(118);
-	  var topojson = __webpack_require__(126);
-	  var canvas = new Canvas(500, 500);
+	  var topojson = __webpack_require__(119);
+
+	  var canvas = new Canvas(960, 500);
 	  var ctx = canvas.getContext('2d');
+	  var projection = _d32['default'].geo.mercator().center([location.split(/,\s?/)[1], location.split(/,\s?/)[0]]).scale(2500);
 
-	  var projection = _d32['default'].geo.equirectangular().center([5, 56]).scale(250);
-
-	  var boundaries = __webpack_require__(156);
+	  var boundaries = __webpack_require__(149);
 	  var path = _d32['default'].geo.path().projection(projection).context(ctx);
 
 	  var airport = (0, _helpers.nearestVoronoi)(location, airports);
 
+	  var airportProjected = projection([airport.point.longitude, airport.point.latitude]);
+
+	  ctx.fillStyle = '#f00';
+	  ctx.fillRect(airportProjected[0] - 5, airportProjected[1] - 5, 10, 10);
+
 	  ctx.beginPath();
-	  path(topojson.feature(topojson.feature(boundaries, boundaries.objects.countries).features));
+	  path(topojson.feature(boundaries, boundaries.objects.countries));
 	  ctx.stroke();
 
-	  return canvas.toDataUrl();
+	  return canvas.toDataURL();
 	}
 
 /***/ },
@@ -46371,20 +46375,22 @@
 	 */
 
 	function nearestVoronoi(location, points) {
+	  var returnEquirectangular = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
+
 	  var nearest = {};
 	  var projection = d3.geo.equirectangular();
 
 	  location = location.split(/,\s?/);
 
 	  var voronoi = d3.geom.voronoi(points.map(function (point) {
-	    var projected = projection([point.longitude, point.latitude]);
+	    var projected = returnEquirectangular ? projection([point.longitude, point.latitude]) : [point.longitude, point.latitude];
 	    return [projected[0], projected[1], point];
 	  })).filter(function (d) {
 	    return d;
 	  });
 
 	  voronoi.forEach(function (region) {
-	    if (isInside(projection([location[1], location[0]]), region)) {
+	    if (isInside(returnEquirectangular ? projection([location[1], location[0]]) : [location[1], location[0]], region)) {
 	      nearest = {
 	        point: region.point[2],
 	        region: region
@@ -46397,1025 +46403,26 @@
 
 /***/ },
 /* 118 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	
-	/*!
-	 * Canvas
-	 * Copyright (c) 2010 LearnBoost <tj@learnboost.com>
-	 * MIT Licensed
-	 */
-
-	/**
-	 * Module dependencies.
-	 */
-
-	var canvas = __webpack_require__(119)
-	  , Canvas = canvas.Canvas
-	  , Image = canvas.Image
-	  , cairoVersion = canvas.cairoVersion
-	  , Context2d = __webpack_require__(121)
-	  , PNGStream = __webpack_require__(122)
-	  , JPEGStream = __webpack_require__(123)
-	  , FontFace = canvas.FontFace
-	  , fs = __webpack_require__(12)
-	  , packageJson = __webpack_require__(124)
-	  , FORMATS = ['image/png', 'image/jpeg'];
-
-	/**
-	 * Export `Canvas` as the module.
-	 */
-
-	var Canvas = exports = module.exports = Canvas;
-
-	/**
-	 * Library version.
-	 */
-
-	exports.version = packageJson.version;
-
-	/**
-	 * Cairo version.
-	 */
-
-	exports.cairoVersion = cairoVersion;
-
-	/**
-	 * jpeglib version.
-	 */
-
-	if (canvas.jpegVersion) {
-	  exports.jpegVersion = canvas.jpegVersion;
-	}
-
-	/**
-	 * gif_lib version.
-	 */
-
-	if (canvas.gifVersion) {
-	  exports.gifVersion = canvas.gifVersion.replace(/[^.\d]/g, '');
-	}
-
-	/**
-	 * Expose constructors.
-	 */
-
-	exports.Context2d = Context2d;
-	exports.PNGStream = PNGStream;
-	exports.JPEGStream = JPEGStream;
-	exports.Image = Image;
-	exports.ImageData = canvas.ImageData;
-
-	if (FontFace) {
-	  function Font(name, path, idx) {
-	    this.name = name;
-	    this._faces = {};
-
-	    this.addFace(path, 'normal', 'normal', idx);
-	  };
-
-	  Font.prototype.addFace = function(path, weight, style, idx) {
-	    style = style || 'normal';
-	    weight = weight || 'normal';
-
-	    var face = new FontFace(path, idx || 0);
-	    this._faces[weight + '-' + style] = face;
-	  };
-
-	  Font.prototype.getFace = function(weightStyle) {
-	    return this._faces[weightStyle] || this._faces['normal-normal'];
-	  };
-
-	  exports.Font = Font;
-	}
-
-	/**
-	 * Context2d implementation.
-	 */
-
-	__webpack_require__(121);
-
-	/**
-	 * Image implementation.
-	 */
-
-	__webpack_require__(125);
-
-	/**
-	 * Inspect canvas.
-	 *
-	 * @return {String}
-	 * @api public
-	 */
-
-	Canvas.prototype.inspect = function(){
-	  return '[Canvas ' + this.width + 'x' + this.height + ']';
-	};
-
-	/**
-	 * Get a context object.
-	 *
-	 * @param {String} contextId
-	 * @return {Context2d}
-	 * @api public
-	 */
-
-	Canvas.prototype.getContext = function(contextId){
-	  if ('2d' == contextId) {
-	    var ctx = this._context2d || (this._context2d = new Context2d(this));
-	    this.context = ctx;
-	    ctx.canvas = this;
-	    return ctx;
-	  }
-	};
-
-	/**
-	 * Create a `PNGStream` for `this` canvas.
-	 *
-	 * @return {PNGStream}
-	 * @api public
-	 */
-
-	Canvas.prototype.pngStream =
-	Canvas.prototype.createPNGStream = function(){
-	  return new PNGStream(this);
-	};
-
-	/**
-	 * Create a synchronous `PNGStream` for `this` canvas.
-	 *
-	 * @return {PNGStream}
-	 * @api public
-	 */
-
-	Canvas.prototype.syncPNGStream =
-	Canvas.prototype.createSyncPNGStream = function(){
-	  return new PNGStream(this, true);
-	};
-
-	/**
-	 * Create a `JPEGStream` for `this` canvas.
-	 *
-	 * @param {Object} options
-	 * @return {JPEGStream}
-	 * @api public
-	 */
-
-	Canvas.prototype.jpegStream =
-	Canvas.prototype.createJPEGStream = function(options){
-	  return this.createSyncJPEGStream(options);
-	};
-
-	/**
-	 * Create a synchronous `JPEGStream` for `this` canvas.
-	 *
-	 * @param {Object} options
-	 * @return {JPEGStream}
-	 * @api public
-	 */
-
-	Canvas.prototype.syncJPEGStream =
-	Canvas.prototype.createSyncJPEGStream = function(options){
-	  options = options || {};
-	  return new JPEGStream(this, {
-	      bufsize: options.bufsize || 4096
-	    , quality: options.quality || 75
-	    , progressive: options.progressive || false
-	  });
-	};
-
-	/**
-	 * Return a data url. Pass a function for async support (required for "image/jpeg").
-	 *
-	 * @param {String} type, optional, one of "image/png" or "image/jpeg", defaults to "image/png"
-	 * @param {Object|Number} encoderOptions, optional, options for jpeg compression (see documentation for Canvas#jpegStream) or the JPEG encoding quality from 0 to 1.
-	 * @param {Function} fn, optional, callback for asynchronous operation. Required for type "image/jpeg".
-	 * @return {String} data URL if synchronous (callback omitted)
-	 * @api public
-	 */
-
-	Canvas.prototype.toDataURL = function(a1, a2, a3){
-	  // valid arg patterns (args -> [type, opts, fn]):
-	  // [] -> ['image/png', null, null]
-	  // [qual] -> ['image/png', null, null]
-	  // [undefined] -> ['image/png', null, null]
-	  // ['image/png'] -> ['image/png', null, null]
-	  // ['image/png', qual] -> ['image/png', null, null]
-	  // [fn] -> ['image/png', null, fn]
-	  // [type, fn] -> [type, null, fn]
-	  // [undefined, fn] -> ['image/png', null, fn]
-	  // ['image/png', qual, fn] -> ['image/png', null, fn]
-	  // ['image/jpeg', fn] -> ['image/jpeg', null, fn]
-	  // ['image/jpeg', opts, fn] -> ['image/jpeg', opts, fn]
-	  // ['image/jpeg', qual, fn] -> ['image/jpeg', {quality: qual}, fn]
-	  // ['image/jpeg', undefined, fn] -> ['image/jpeg', null, fn]
-
-	  if (this.width === 0 || this.height === 0) {
-	    // Per spec, if the bitmap has no pixels, return this string:
-	    return "data:,";
-	  }
-
-	  var type = 'image/png';
-	  var opts = {};
-	  var fn;
-
-	  if ('function' === typeof a1) {
-	    fn = a1;
-	  } else {
-	    if ('string' === typeof a1 && FORMATS.indexOf(a1.toLowerCase()) !== -1) {
-	      type = a1.toLowerCase();
-	    }
-
-	    if ('function' === typeof a2) {
-	      fn = a2;
-	    } else {
-	      if ('object' === typeof a2) {
-	        opts = a2;
-	      } else if ('number' === typeof a2) {
-	        opts = {quality: Math.min(0, Math.max(1, a2)) * 100};
-	      }
-
-	      if ('function' === typeof a3) {
-	        fn = a3;
-	      } else if (undefined !== a3) {
-	        throw new TypeError(typeof a3 + ' is not a function');
-	      }
-	    }
-	  }
-
-	  if ('image/png' === type) {
-	    if (fn) {
-	      this.toBuffer(function(err, buf){
-	        if (err) return fn(err);
-	        fn(null, 'data:image/png;base64,' + buf.toString('base64'));
-	      });
-	    } else {
-	      return 'data:image/png;base64,' + this.toBuffer().toString('base64');
-	    }
-
-	  } else if ('image/jpeg' === type) {
-	    if (undefined === fn) {
-	      throw new Error('Missing required callback function for format "image/jpeg"');
-	    }
-
-	    var stream = this.jpegStream(opts);
-	    // note that jpegStream is synchronous
-	    var buffers = [];
-	    stream.on('data', function (chunk) {
-	      buffers.push(chunk);
-	    });
-	    stream.on('error', function (err) {
-	      fn(err);
-	    });
-	    stream.on('end', function() {
-	      var result = 'data:image/jpeg;base64,' + Buffer.concat(buffers).toString('base64');
-	      fn(null, result);
-	    });
-	  }
-	};
-
+	module.exports = require("canvas");
 
 /***/ },
 /* 119 */
 /***/ function(module, exports, __webpack_require__) {
 
-	
-	module.exports = __webpack_require__(120);
+	var topojson = module.exports = __webpack_require__(120);
+	topojson.topology = __webpack_require__(121);
+	topojson.simplify = __webpack_require__(144);
+	topojson.clockwise = __webpack_require__(145);
+	topojson.filter = __webpack_require__(146);
+	topojson.prune = __webpack_require__(147);
+	topojson.stitch = __webpack_require__(123);
+	topojson.scale = __webpack_require__(148);
 
 
 /***/ },
 /* 120 */
-/***/ function(module, exports) {
-
-	try {process.dlopen("/Users/aendrew/Sites/learning-d3/node_modules/canvas/build/Release/canvas.node", module.exports); } catch(e) {throw new Error('Cannot open ' + "/Users/aendrew/Sites/learning-d3/node_modules/canvas/build/Release/canvas.node" + ': ' + e);}
-
-/***/ },
-/* 121 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*!
-	 * Canvas - Context2d
-	 * Copyright (c) 2010 LearnBoost <tj@learnboost.com>
-	 * MIT Licensed
-	 */
-
-	/**
-	 * Module dependencies.
-	 */
-
-	var canvas = __webpack_require__(119)
-	  , Context2d = canvas.CanvasRenderingContext2d
-	  , CanvasGradient = canvas.CanvasGradient
-	  , CanvasPattern = canvas.CanvasPattern
-	  , ImageData = canvas.ImageData;
-
-	/**
-	 * Export `Context2d` as the module.
-	 */
-
-	var Context2d = exports = module.exports = Context2d;
-
-	/**
-	 * Cache color string RGBA values.
-	 */
-
-	var cache = {};
-
-	/**
-	 * Text baselines.
-	 */
-
-	var baselines = ['alphabetic', 'top', 'bottom', 'middle', 'ideographic', 'hanging'];
-
-	/**
-	 * Font RegExp helpers.
-	 */
-
-	var weights = 'normal|bold|bolder|lighter|[1-9]00'
-	  , styles = 'normal|italic|oblique'
-	  , units = 'px|pt|pc|in|cm|mm|%'
-	  , string = '\'([^\']+)\'|"([^"]+)"|[\\w-]+';
-
-	/**
-	 * Font parser RegExp;
-	 */
-
-	var fontre = new RegExp('^ *'
-	  + '(?:(' + weights + ') *)?'
-	  + '(?:(' + styles + ') *)?'
-	  + '([\\d\\.]+)(' + units + ') *'
-	  + '((?:' + string + ')( *, *(?:' + string + '))*)'
-	  );
-
-	/**
-	 * Parse font `str`.
-	 *
-	 * @param {String} str
-	 * @return {Object}
-	 * @api private
-	 */
-
-	var parseFont = exports.parseFont = function(str){
-	  var font = {}
-	    , captures = fontre.exec(str);
-
-	  // Invalid
-	  if (!captures) return;
-
-	  // Cached
-	  if (cache[str]) return cache[str];
-
-	  // Populate font object
-	  font.weight = captures[1] || 'normal';
-	  font.style = captures[2] || 'normal';
-	  font.size = parseFloat(captures[3]);
-	  font.unit = captures[4];
-	  font.family = captures[5].replace(/["']/g, '').split(',')[0].trim();
-
-	  // TODO: dpi
-	  // TODO: remaining unit conversion
-	  switch (font.unit) {
-	    case 'pt':
-	      font.size /= .75;
-	      break;
-	    case 'in':
-	      font.size *= 96;
-	      break;
-	    case 'mm':
-	      font.size *= 96.0 / 25.4;
-	      break;
-	    case 'cm':
-	      font.size *= 96.0 / 2.54;
-	      break;
-	  }
-
-	  return cache[str] = font;
-	};
-
-	/**
-	 * Enable or disable image smoothing.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineSetter__('imageSmoothingEnabled', function(val){
-	  this._imageSmoothing = !! val;
-	  this.patternQuality = val ? 'best' : 'fast';
-	});
-
-	/**
-	 * Get image smoothing value.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineGetter__('imageSmoothingEnabled', function(val){
-	  return !! this._imageSmoothing;
-	});
-
-	/**
-	 * Create a pattern from `Image` or `Canvas`.
-	 *
-	 * @param {Image|Canvas} image
-	 * @param {String} repetition
-	 * @return {CanvasPattern}
-	 * @api public
-	 */
-
-	Context2d.prototype.createPattern = function(image, repetition){
-	  // TODO Use repetition (currently always 'repeat')
-	  return new CanvasPattern(image);
-	};
-
-	/**
-	 * Create a linear gradient at the given point `(x0, y0)` and `(x1, y1)`.
-	 *
-	 * @param {Number} x0
-	 * @param {Number} y0
-	 * @param {Number} x1
-	 * @param {Number} y1
-	 * @return {CanvasGradient}
-	 * @api public
-	 */
-
-	Context2d.prototype.createLinearGradient = function(x0, y0, x1, y1){
-	  return new CanvasGradient(x0, y0, x1, y1);
-	};
-
-	/**
-	 * Create a radial gradient at the given point `(x0, y0)` and `(x1, y1)`
-	 * and radius `r0` and `r1`.
-	 *
-	 * @param {Number} x0
-	 * @param {Number} y0
-	 * @param {Number} r0
-	 * @param {Number} x1
-	 * @param {Number} y1
-	 * @param {Number} r1
-	 * @return {CanvasGradient}
-	 * @api public
-	 */
-
-	Context2d.prototype.createRadialGradient = function(x0, y0, r0, x1, y1, r1){
-	  return new CanvasGradient(x0, y0, r0, x1, y1, r1);
-	};
-
-	/**
-	 * Reset transform matrix to identity, then apply the given args.
-	 *
-	 * @param {...}
-	 * @api public
-	 */
-
-	Context2d.prototype.setTransform = function(){
-	  this.resetTransform();
-	  this.transform.apply(this, arguments);
-	};
-
-	/**
-	 * Set the fill style with the given css color string.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineSetter__('fillStyle', function(val){
-	  if (!val) return;
-	  if ('CanvasGradient' == val.constructor.name
-	    || 'CanvasPattern' == val.constructor.name) {
-	    this.lastFillStyle = val;
-	    this._setFillPattern(val);
-	  } else if ('string' == typeof val) {
-	    this._setFillColor(val);
-	  }
-	});
-
-	/**
-	 * Get previous fill style.
-	 *
-	 * @return {CanvasGradient|String}
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineGetter__('fillStyle', function(){
-	  return this.lastFillStyle || this.fillColor;
-	});
-
-	/**
-	 * Set the stroke style with the given css color string.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineSetter__('strokeStyle', function(val){
-	  if (!val) return;
-	  if ('CanvasGradient' == val.constructor.name
-	    || 'CanvasPattern' == val.constructor.name) {
-	    this.lastStrokeStyle = val;
-	    this._setStrokePattern(val);
-	  } else if ('string' == typeof val) {
-	    this._setStrokeColor(val);
-	  }
-	});
-
-	/**
-	 * Get previous stroke style.
-	 *
-	 * @return {CanvasGradient|String}
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineGetter__('strokeStyle', function(){
-	  return this.lastStrokeStyle || this.strokeColor;
-	});
-
-	/**
-	 * Register `font` for usage.
-	 *
-	 * @param {Font} font
-	 * @api public
-	 */
-
-	Context2d.prototype.addFont = function(font) {
-	  this._fonts = this._fonts || {};
-	  if (this._fonts[font.name]) return;
-	  this._fonts[font.name] = font;
-	};
-
-	/**
-	 * Set font.
-	 *
-	 * @see exports.parseFont()
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineSetter__('font', function(val){
-	  if (!val) return;
-	  if ('string' == typeof val) {
-	    var font;
-	    if (font = parseFont(val)) {
-	      this.lastFontString = val;
-
-	      var fonts = this._fonts;
-	      if (fonts && fonts[font.family]) {
-	        var fontObj = fonts[font.family];
-	        var type = font.weight + '-' + font.style;
-
-	        var fontFace = fontObj.getFace(type);
-	        this._setFontFace(fontFace, font.size);
-	      } else {
-	        this._setFont(
-	            font.weight
-	          , font.style
-	          , font.size
-	          , font.unit
-	          , font.family);
-	      }
-	    }
-	  }
-	});
-
-	/**
-	 * Get the current font.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineGetter__('font', function(){
-	  return this.lastFontString || '10px sans-serif';
-	});
-
-	/**
-	 * Set text baseline.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineSetter__('textBaseline', function(val){
-	  if (!val) return;
-	  var n = baselines.indexOf(val);
-	  if (~n) {
-	    this.lastBaseline = val;
-	    this._setTextBaseline(n);
-	  }
-	});
-
-	/**
-	 * Get the current baseline setting.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineGetter__('textBaseline', function(){
-	  return this.lastBaseline || 'alphabetic';
-	});
-
-	/**
-	 * Set text alignment.
-	 *
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineSetter__('textAlign', function(val){
-	  switch (val) {
-	    case 'center':
-	      this._setTextAlignment(0);
-	      this.lastTextAlignment = val;
-	      break;
-	    case 'left':
-	    case 'start':
-	      this._setTextAlignment(-1);
-	      this.lastTextAlignment = val;
-	      break;
-	    case 'right':
-	    case 'end':
-	      this._setTextAlignment(1);
-	      this.lastTextAlignment = val;
-	      break;
-	  }
-	});
-
-	/**
-	 * Get the current font.
-	 *
-	 * @see exports.parseFont()
-	 * @api public
-	 */
-
-	Context2d.prototype.__defineGetter__('textAlign', function(){
-	  return this.lastTextAlignment || 'start';
-	});
-
-	/**
-	 * Create `ImageData` with the given dimensions or
-	 * `ImageData` instance for dimensions.
-	 *
-	 * @param {Number|ImageData} width
-	 * @param {Number} height
-	 * @return {ImageData}
-	 * @api public
-	 */
-
-	Context2d.prototype.createImageData = function(width, height){
-	  if ('ImageData' == width.constructor.name) {
-	    height = width.height;
-	    width = width.width;
-	  }
-	  return new ImageData(new Uint8ClampedArray(width * height * 4), width, height);
-	};
-
-
-/***/ },
-/* 122 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/*!
-	 * Canvas - PNGStream
-	 * Copyright (c) 2010 LearnBoost <tj@learnboost.com>
-	 * MIT Licensed
-	 */
-
-	/**
-	 * Module dependencies.
-	 */
-
-	var Stream = __webpack_require__(51).Stream;
-
-	/**
-	 * Initialize a `PNGStream` with the given `canvas`.
-	 *
-	 * "data" events are emitted with `Buffer` chunks, once complete the
-	 * "end" event is emitted. The following example will stream to a file
-	 * named "./my.png".
-	 *
-	 *     var out = fs.createWriteStream(__dirname + '/my.png')
-	 *       , stream = canvas.createPNGStream();
-	 *
-	 *     stream.pipe(out);
-	 *
-	 * @param {Canvas} canvas
-	 * @param {Boolean} sync
-	 * @api public
-	 */
-
-	var PNGStream = module.exports = function PNGStream(canvas, sync) {
-	  var self = this
-	    , method = sync
-	      ? 'streamPNGSync'
-	      : 'streamPNG';
-	  this.sync = sync;
-	  this.canvas = canvas;
-	  this.readable = true;
-	  // TODO: implement async
-	  if ('streamPNG' == method) method = 'streamPNGSync';
-	  process.nextTick(function(){
-	    canvas[method](function(err, chunk, len){
-	      if (err) {
-	        self.emit('error', err);
-	        self.readable = false;
-	      } else if (len) {
-	        self.emit('data', chunk, len);
-	      } else {
-	        self.emit('end');
-	        self.readable = false;
-	      }
-	    });
-	  });
-	};
-
-	/**
-	 * Inherit from `EventEmitter`.
-	 */
-
-	PNGStream.prototype.__proto__ = Stream.prototype;
-
-/***/ },
-/* 123 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/*!
-	 * Canvas - JPEGStream
-	 * Copyright (c) 2010 LearnBoost <tj@learnboost.com>
-	 * MIT Licensed
-	 */
-
-	/**
-	 * Module dependencies.
-	 */
-
-	var Stream = __webpack_require__(51).Stream;
-
-	/**
-	 * Initialize a `JPEGStream` with the given `canvas`.
-	 *
-	 * "data" events are emitted with `Buffer` chunks, once complete the
-	 * "end" event is emitted. The following example will stream to a file
-	 * named "./my.jpeg".
-	 *
-	 *     var out = fs.createWriteStream(__dirname + '/my.jpeg')
-	 *       , stream = canvas.createJPEGStream();
-	 *
-	 *     stream.pipe(out);
-	 *
-	 * @param {Canvas} canvas
-	 * @param {Boolean} sync
-	 * @api public
-	 */
-
-	var JPEGStream = module.exports = function JPEGStream(canvas, options, sync) {
-	  var self = this
-	    , method = sync
-	      ? 'streamJPEGSync'
-	      : 'streamJPEG';
-	  this.options = options;
-	  this.sync = sync;
-	  this.canvas = canvas;
-	  this.readable = true;
-	  // TODO: implement async
-	  if ('streamJPEG' == method) method = 'streamJPEGSync';
-	  process.nextTick(function(){
-	    canvas[method](options.bufsize, options.quality, options.progressive, function(err, chunk){
-	      if (err) {
-	        self.emit('error', err);
-	        self.readable = false;
-	      } else if (chunk) {
-	        self.emit('data', chunk);
-	      } else {
-	        self.emit('end');
-	        self.readable = false;
-	      }
-	    });
-	  });
-	};
-
-	/**
-	 * Inherit from `EventEmitter`.
-	 */
-
-	JPEGStream.prototype.__proto__ = Stream.prototype;
-
-
-/***/ },
-/* 124 */
-/***/ function(module, exports) {
-
-	module.exports = {
-		"_args": [
-			[
-				"canvas@^1.3.9",
-				"/Users/aendrew/Sites/learning-d3"
-			]
-		],
-		"_from": "canvas@>=1.3.9 <2.0.0",
-		"_id": "canvas@1.3.9",
-		"_inCache": true,
-		"_installable": true,
-		"_location": "/canvas",
-		"_nodeVersion": "5.4.1",
-		"_npmUser": {
-			"email": "linus@folkdatorn.se",
-			"name": "linusu"
-		},
-		"_npmVersion": "3.5.3",
-		"_phantomChildren": {},
-		"_requested": {
-			"name": "canvas",
-			"raw": "canvas@^1.3.9",
-			"rawSpec": "^1.3.9",
-			"scope": null,
-			"spec": ">=1.3.9 <2.0.0",
-			"type": "range"
-		},
-		"_requiredBy": [
-			"/"
-		],
-		"_resolved": "https://registry.npmjs.org/canvas/-/canvas-1.3.9.tgz",
-		"_shasum": "de96344b347083b1228a5596f0babc2032b84ed1",
-		"_shrinkwrap": null,
-		"_spec": "canvas@^1.3.9",
-		"_where": "/Users/aendrew/Sites/learning-d3",
-		"author": {
-			"email": "tj@learnboost.com",
-			"name": "TJ Holowaychuk"
-		},
-		"bugs": {
-			"url": "https://github.com/Automattic/node-canvas/issues"
-		},
-		"contributors": [
-			{
-				"name": "Nathan Rajlich",
-				"email": "nathan@tootallnate.net"
-			},
-			{
-				"name": "Rod Vagg",
-				"email": "r@va.gg"
-			},
-			{
-				"name": "Juriy Zaytsev",
-				"email": "kangax@gmail.com"
-			}
-		],
-		"dependencies": {
-			"nan": "^2.1.0"
-		},
-		"description": "Canvas graphics API backed by Cairo",
-		"devDependencies": {
-			"body-parser": "^1.13.3",
-			"express": "^4.13.2",
-			"jade": "^1.11.0",
-			"mocha": "*"
-		},
-		"directories": {},
-		"dist": {
-			"shasum": "de96344b347083b1228a5596f0babc2032b84ed1",
-			"tarball": "http://registry.npmjs.org/canvas/-/canvas-1.3.9.tgz"
-		},
-		"engines": {
-			"node": ">=0.8.0"
-		},
-		"gitHead": "7a4e56e2c53945adc9eca7d1c4cdab85ebe2127e",
-		"gypfile": true,
-		"homepage": "https://github.com/Automattic/node-canvas",
-		"keywords": [
-			"cairo",
-			"canvas",
-			"graphic",
-			"graphics",
-			"image",
-			"images",
-			"pdf",
-			"pixman"
-		],
-		"license": "MIT",
-		"main": "./lib/canvas.js",
-		"maintainers": [
-			{
-				"name": "tjholowaychuk",
-				"email": "tj@vision-media.ca"
-			},
-			{
-				"name": "kangax",
-				"email": "kangax@gmail.com"
-			},
-			{
-				"name": "tootallnate",
-				"email": "nathan@tootallnate.net"
-			},
-			{
-				"name": "rauchg",
-				"email": "rauchg@gmail.com"
-			},
-			{
-				"name": "domenic",
-				"email": "d@domenic.me"
-			},
-			{
-				"name": "linusu",
-				"email": "linus@folkdatorn.se"
-			}
-		],
-		"name": "canvas",
-		"optionalDependencies": {},
-		"readme": "ERROR: No README data found!",
-		"repository": {
-			"type": "git",
-			"url": "git://github.com/Automattic/node-canvas.git"
-		},
-		"scripts": {
-			"benchmark": "node benchmarks/run.js",
-			"install": "node-gyp rebuild",
-			"prebenchmark": "node-gyp build",
-			"pretest": "node-gyp build",
-			"pretest-server": "node-gyp build",
-			"test": "mocha test/*.test.js",
-			"test-server": "node test/server.js"
-		},
-		"version": "1.3.9"
-	};
-
-/***/ },
-/* 125 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/*!
-	 * Canvas - Image
-	 * Copyright (c) 2010 LearnBoost <tj@learnboost.com>
-	 * MIT Licensed
-	 */
-
-	/**
-	 * Module dependencies.
-	 */
-
-	var Canvas = __webpack_require__(119)
-	  , Image = Canvas.Image;
-
-	/**
-	 * Src setter.
-	 *
-	 *  - convert data uri to `Buffer`
-	 *
-	 * @param {String|Buffer} val filename, buffer, data uri
-	 * @api public
-	 */
-
-	Image.prototype.__defineSetter__('src', function(val){
-	  if ('string' == typeof val && 0 == val.indexOf('data:')) {
-	    val = val.slice(val.indexOf(',') + 1);
-	    this.source = new Buffer(val, 'base64');
-	  } else {
-	    this.source = val;
-	  }
-	});
-
-	/**
-	 * Src getter.
-	 * 
-	 * TODO: return buffer
-	 * 
-	 * @api public
-	 */
-
-	Image.prototype.__defineGetter__('src', function(){
-	  return this.source;
-	});
-
-	/**
-	 * Inspect image.
-	 *
-	 * TODO: indicate that the .src was a buffer, data uri etc
-	 *
-	 * @return {String}
-	 * @api public
-	 */
-
-	Image.prototype.inspect = function(){
-	  return '[Image'
-	    + (this.complete ? ':' + this.width + 'x' + this.height : '')
-	    + (this.src ? ' ' + this.src : '')
-	    + (this.complete ? ' complete' : '')
-	    + ']';
-	};
-
-
-/***/ },
-/* 126 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var topojson = module.exports = __webpack_require__(127);
-	topojson.topology = __webpack_require__(128);
-	topojson.simplify = __webpack_require__(151);
-	topojson.clockwise = __webpack_require__(152);
-	topojson.filter = __webpack_require__(153);
-	topojson.prune = __webpack_require__(154);
-	topojson.stitch = __webpack_require__(130);
-	topojson.scale = __webpack_require__(155);
-
-
-/***/ },
-/* 127 */
 /***/ function(module, exports, __webpack_require__) {
 
 	(function (global, factory) {
@@ -47968,20 +46975,20 @@
 	}));
 
 /***/ },
-/* 128 */
+/* 121 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var type = __webpack_require__(129),
-	    stitch = __webpack_require__(130),
-	    systems = __webpack_require__(131),
-	    topologize = __webpack_require__(134),
-	    delta = __webpack_require__(143),
-	    geomify = __webpack_require__(144),
-	    prequantize = __webpack_require__(145),
-	    postquantize = __webpack_require__(147),
-	    bounds = __webpack_require__(148),
-	    computeId = __webpack_require__(149),
-	    transformProperties = __webpack_require__(150);
+	var type = __webpack_require__(122),
+	    stitch = __webpack_require__(123),
+	    systems = __webpack_require__(124),
+	    topologize = __webpack_require__(127),
+	    delta = __webpack_require__(136),
+	    geomify = __webpack_require__(137),
+	    prequantize = __webpack_require__(138),
+	    postquantize = __webpack_require__(140),
+	    bounds = __webpack_require__(141),
+	    computeId = __webpack_require__(142),
+	    transformProperties = __webpack_require__(143);
 
 	var ε = 1e-6;
 
@@ -48085,7 +47092,7 @@
 
 
 /***/ },
-/* 129 */
+/* 122 */
 /***/ function(module, exports) {
 
 	module.exports = function(types) {
@@ -48183,10 +47190,10 @@
 
 
 /***/ },
-/* 130 */
+/* 123 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var type = __webpack_require__(129);
+	var type = __webpack_require__(122);
 
 	module.exports = function(objects, transform) {
 	  var ε = 1e-2,
@@ -48370,17 +47377,17 @@
 
 
 /***/ },
-/* 131 */
+/* 124 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
-	  cartesian: __webpack_require__(132),
-	  spherical: __webpack_require__(133)
+	  cartesian: __webpack_require__(125),
+	  spherical: __webpack_require__(126)
 	};
 
 
 /***/ },
-/* 132 */
+/* 125 */
 /***/ function(module, exports) {
 
 	exports.name = "cartesian";
@@ -48424,7 +47431,7 @@
 
 
 /***/ },
-/* 133 */
+/* 126 */
 /***/ function(module, exports) {
 
 	var π = Math.PI,
@@ -48509,13 +47516,13 @@
 
 
 /***/ },
-/* 134 */
+/* 127 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var hashmap = __webpack_require__(135),
-	    extract = __webpack_require__(136),
-	    cut = __webpack_require__(137),
-	    dedup = __webpack_require__(142);
+	var hashmap = __webpack_require__(128),
+	    extract = __webpack_require__(129),
+	    cut = __webpack_require__(130),
+	    dedup = __webpack_require__(135);
 
 	// Constructs the TopoJSON Topology for the specified hash of geometries.
 	// Each object in the specified hash must be a GeoJSON object,
@@ -48583,7 +47590,7 @@
 
 
 /***/ },
-/* 135 */
+/* 128 */
 /***/ function(module, exports) {
 
 	module.exports = function(size, hash, equal, keyType, keyEmpty, valueType) {
@@ -48662,7 +47669,7 @@
 
 
 /***/ },
-/* 136 */
+/* 129 */
 /***/ function(module, exports) {
 
 	// Extracts the lines and rings from the specified hash of geometry objects.
@@ -48733,10 +47740,10 @@
 
 
 /***/ },
-/* 137 */
+/* 130 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var join = __webpack_require__(138);
+	var join = __webpack_require__(131);
 
 	// Given an extracted (pre-)topology, cuts (or rotates) arcs so that all shared
 	// point sequences are identified. The topology can then be subsequently deduped
@@ -48799,13 +47806,13 @@
 
 
 /***/ },
-/* 138 */
+/* 131 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var hashset = __webpack_require__(139),
-	    hashmap = __webpack_require__(135),
-	    hashPoint = __webpack_require__(140),
-	    equalPoint = __webpack_require__(141);
+	var hashset = __webpack_require__(132),
+	    hashmap = __webpack_require__(128),
+	    hashPoint = __webpack_require__(133),
+	    equalPoint = __webpack_require__(134);
 
 	// Given an extracted (pre-)topology, identifies all of the junctions. These are
 	// the points at which arcs (lines or rings) will need to be cut so that each
@@ -48918,7 +47925,7 @@
 
 
 /***/ },
-/* 139 */
+/* 132 */
 /***/ function(module, exports) {
 
 	module.exports = function(size, hash, equal, type, empty) {
@@ -48979,7 +47986,7 @@
 
 
 /***/ },
-/* 140 */
+/* 133 */
 /***/ function(module, exports) {
 
 	// TODO if quantized, use simpler Int32 hashing?
@@ -48998,7 +48005,7 @@
 
 
 /***/ },
-/* 141 */
+/* 134 */
 /***/ function(module, exports) {
 
 	module.exports = function(pointA, pointB) {
@@ -49007,13 +48014,13 @@
 
 
 /***/ },
-/* 142 */
+/* 135 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var join = __webpack_require__(138),
-	    hashmap = __webpack_require__(135),
-	    hashPoint = __webpack_require__(140),
-	    equalPoint = __webpack_require__(141);
+	var join = __webpack_require__(131),
+	    hashmap = __webpack_require__(128),
+	    hashPoint = __webpack_require__(133),
+	    equalPoint = __webpack_require__(134);
 
 	// Given a cut topology, combines duplicate arcs.
 	module.exports = function(topology) {
@@ -49197,7 +48204,7 @@
 
 
 /***/ },
-/* 143 */
+/* 136 */
 /***/ function(module, exports) {
 
 	// Given a TopoJSON topology in absolute (quantized) coordinates,
@@ -49232,7 +48239,7 @@
 
 
 /***/ },
-/* 144 */
+/* 137 */
 /***/ function(module, exports) {
 
 	// Given a hash of GeoJSON objects, replaces Features with geometry objects.
@@ -49355,10 +48362,10 @@
 
 
 /***/ },
-/* 145 */
+/* 138 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var quantize = __webpack_require__(146);
+	var quantize = __webpack_require__(139);
 
 	module.exports = function(objects, bbox, Q0, Q1) {
 	  if (arguments.length < 4) Q1 = Q0;
@@ -49418,7 +48425,7 @@
 
 
 /***/ },
-/* 146 */
+/* 139 */
 /***/ function(module, exports) {
 
 	module.exports = function(dx, dy, kx, ky) {
@@ -49466,10 +48473,10 @@
 
 
 /***/ },
-/* 147 */
+/* 140 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var quantize = __webpack_require__(146);
+	var quantize = __webpack_require__(139);
 
 	module.exports = function(topology, Q0, Q1) {
 	  if (Q0) {
@@ -49518,7 +48525,7 @@
 
 
 /***/ },
-/* 148 */
+/* 141 */
 /***/ function(module, exports) {
 
 	
@@ -49569,7 +48576,7 @@
 
 
 /***/ },
-/* 149 */
+/* 142 */
 /***/ function(module, exports) {
 
 	// Given a hash of GeoJSON objects and an id function, invokes the id function
@@ -49603,7 +48610,7 @@
 
 
 /***/ },
-/* 150 */
+/* 143 */
 /***/ function(module, exports) {
 
 	// Given a hash of GeoJSON objects, transforms any properties on features using
@@ -49637,11 +48644,11 @@
 
 
 /***/ },
-/* 151 */
+/* 144 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var topojson = __webpack_require__(127),
-	    systems = __webpack_require__(131);
+	var topojson = __webpack_require__(120),
+	    systems = __webpack_require__(124);
 
 	module.exports = function(topology, options) {
 	  var minimumArea = 0,
@@ -49751,12 +48758,12 @@
 
 
 /***/ },
-/* 152 */
+/* 145 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var type = __webpack_require__(129),
-	    systems = __webpack_require__(131),
-	    topojson = __webpack_require__(127);
+	var type = __webpack_require__(122),
+	    systems = __webpack_require__(124),
+	    topojson = __webpack_require__(120);
 
 	module.exports = function(object, options) {
 	  if (object.type === "Topology") clockwiseTopology(object, options);
@@ -49846,14 +48853,14 @@
 
 
 /***/ },
-/* 153 */
+/* 146 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var type = __webpack_require__(129),
-	    prune = __webpack_require__(154),
-	    clockwise = __webpack_require__(152),
-	    systems = __webpack_require__(131),
-	    topojson = __webpack_require__(127);
+	var type = __webpack_require__(122),
+	    prune = __webpack_require__(147),
+	    clockwise = __webpack_require__(145),
+	    systems = __webpack_require__(124),
+	    topojson = __webpack_require__(120);
 
 	module.exports = function(topology, options) {
 	  var system = null,
@@ -49979,7 +48986,7 @@
 
 
 /***/ },
-/* 154 */
+/* 147 */
 /***/ function(module, exports) {
 
 	module.exports = function(topology, options) {
@@ -50040,10 +49047,10 @@
 
 
 /***/ },
-/* 155 */
+/* 148 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var type = __webpack_require__(129);
+	var type = __webpack_require__(122);
 
 	module.exports = function(topology, options) {
 	  var width,
@@ -50124,7 +49131,7 @@
 
 
 /***/ },
-/* 156 */
+/* 149 */
 /***/ function(module, exports) {
 
 	module.exports = {

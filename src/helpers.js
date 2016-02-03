@@ -180,7 +180,7 @@ export function isInside(point, polygon) {
  * @param  {Array<Array<Number>>} points   An array of arrays containing points
  * @return {Object|Void}                   The nearest point to location. Throws Error if point not found.
  */
-export function nearestVoronoi(location, points) {
+export function nearestVoronoi(location, points, returnEquirectangular = true) {
   let nearest = {};
   let projection = d3.geo.equirectangular();
 
@@ -188,13 +188,13 @@ export function nearestVoronoi(location, points) {
 
   let voronoi = d3.geom.voronoi(
     points.map((point) => {
-      let projected = projection([point.longitude, point.latitude]);
+      let projected = returnEquirectangular ? projection([point.longitude, point.latitude]) : [point.longitude, point.latitude];
       return [projected[0], projected[1], point];
     }))
     .filter((d) => d);
 
   voronoi.forEach((region) => {
-    if (isInside(projection([location[1], location[0]]), region)) {
+    if (isInside(returnEquirectangular ? projection([location[1], location[0]]) : [location[1], location[0]], region)) {
       nearest = {
         point: region.point[2],
         region: region

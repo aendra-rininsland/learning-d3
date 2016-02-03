@@ -33,6 +33,7 @@
     "express": "^4.13.3",
     "jsdom": "^8.0.2",
     "lodash": "^3.10.1",
+    "systemjs": "^0.19.18",
     "topojson": "^1.6.19"
   },
   "devDependencies": {
