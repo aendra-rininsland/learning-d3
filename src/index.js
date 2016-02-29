@@ -1,17 +1,4 @@
-window.d3 = undefined;
+import {TypeScriptChart} from './chapter8.ts';
 
-// import PoliticalDonorChart from './chapter5';
-// new PoliticalDonorChart('histogram');
-// new PoliticalDonorChart('pie', 'The Rt Hon Edward Miliband MP');
-// new PoliticalDonorChart('streamgraph');
-// new PoliticalDonorChart('chord', 'Miliband');
-// new PoliticalDonorChart('force');
-// new PoliticalDonorChart('tree', 'Miliband');
-// new PoliticalDonorChart('cluster', 'Miliband');
-// new PoliticalDonorChart('partition', 'Miliband');
-// new PoliticalDonorChart('pack');
-// new PoliticalDonorChart('treemap', 'Miliband');
-
-import VoronoiAirports from './voronoi-airports';
-
-new VoronoiAirports('41.961571, -87.959659');
+let data = require('./data/chapter1.json');
+window.chart = new TypeScriptChart(data);

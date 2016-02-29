@@ -8,10 +8,8 @@
  * statements and also ES6 module definitions.
  */
 
+// This helps us find paths!
 var path = require('path');
-
-// This bit here helps us use binary modules in NodeJS better.
-var fs = require('fs');
 
 module.exports = [
   {
@@ -31,7 +29,19 @@ module.exports = [
     // threw the exception or console.log or whathaveyounot.
     devtool: 'inline-source-map',
 
+    // It provides a bit too much info by default.
+    devServer: {
+      stats: 'errors-only'
+    },
+
     module: {
+      preLoaders: [
+        {
+          test: /\.js$/,
+          loader: 'eslint-loader',
+          exclude: /node_modules/
+        }
+      ],
       loaders: [
         {
           test: /\.js?$/, // Another convention is to use the .es6 filetype, but you then
@@ -50,6 +60,11 @@ module.exports = [
         {
           test: /\.css$/,
           loader: 'style-loader!css-loader'
+        },
+        // What's this now? We can use TypeScript inside of Babel-compiled ES6 files? TEH FUUUTUURE 😎
+        {
+          test: /\.ts$/,
+          loader: 'ts-loader'
         }
       ]
     }
@@ -63,9 +78,17 @@ module.exports = [
           filename: 'server.js'
       },
       externals: {
-        canvas: 'commonjs canvas'
+        canvas: 'commonjs canvas',
+        express: 'commonjs express'
       },
       module: {
+        preLoaders: [
+          {
+            test: /\.js$/,
+            loader: 'eslint-loader',
+            exclude: /node_modules/
+          }
+        ],
         loaders: [
           {
             test: /\.js?$/,
@@ -81,6 +104,9 @@ module.exports = [
             loader: 'node-loader'
           }
         ]
+      },
+      devServer: {
+        stats: 'errors-only'
       }
   }
 ];
