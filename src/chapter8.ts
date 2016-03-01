@@ -62,25 +62,29 @@ export class TypeScriptChart extends BasicChart{
       }
     });
 
-    this.bars.data(this.data)
-        .enter()
-        .append('rect')
-        .attr('class', 'bar')
-        .attr('x', (d) => this.x(d.name))
-        .attr('width', this.x.rangeBand())
-        .attr('y', () => this.y(this.margin.bottom))
-        .attr('height', 0);
-
-    this.bars.transition()
-      .delay((d, i) => i*200)
-      .duration(800)
-      .attr('y', (d) => this.y(d.population))
-      .attr('height', (d) => this.height - this.y(d.population));
-
-    this.x.domain(this.data.map((d) => d.name ));
-    let xAxis = d3.svg.axis().scale(this.x).orient('bottom');
-    this.chart.select('.x.axis').call(xAxis);
+    this.redraw();
   }
+
+  // redraw() {
+  //   this.bars.data(this.data)
+  //       .enter()
+  //       .append('rect')
+  //       .attr('class', 'bar')
+  //       .attr('x', (d) => this.x(d.name))
+  //       .attr('width', this.x.rangeBand())
+  //       .attr('y', () => this.y(this.margin.bottom))
+  //       .attr('height', 0);
+  //
+  //   this.bars.transition()
+  //     .delay((d, i) => i*200)
+  //     .duration(800)
+  //     .attr('y', (d) => this.y(d.population))
+  //     .attr('height', (d) => this.height - this.y(d.population));
+  //
+  //   this.x.domain(this.data.map((d) => d.name ));
+  //   let xAxis = d3.svg.axis().scale(this.x).orient('bottom');
+  //   this.chart.select('.x.axis').call(xAxis);
+  // }
 
   data: Array<{name: string; population: number}>;
   x: d3.scale.Ordinal<string, number>;
