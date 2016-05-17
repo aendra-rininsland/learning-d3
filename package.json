@@ -4,7 +4,7 @@
   "description": "Learning Data Visualization with D3.js (2nd edition) examples and tutorials",
   "main": "src/index.js",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha spec/index.js",
+    "test": "mocha spec/index.js",
     "lint": "./node_modules/eslint/bin/eslint.js src/*.js",
     "start": "./node_modules/webpack-dev-server/bin/webpack-dev-server.js --inline --content-base src/",
     "server": "./node_modules/webpack/bin/webpack.js && node build/server.js"
@@ -30,6 +30,7 @@
   "homepage": "https://github.com/aendrew/learning-d3#readme",
   "dependencies": {
     "body-parser": "^1.14.2",
+    "canvas": "^1.3.9",
     "d3": "^3.5.17",
     "earth-topojson": "^1.0.0",
     "express": "^4.13.3",
@@ -42,23 +43,10 @@
     "babel-core": "^5.8.29",
     "babel-eslint": "^4.1.3",
     "babel-loader": "^5.3.2",
-    "babel-plugin-typecheck": "^2.0.1",
-    "chai": "^3.5.0",
     "css-loader": "^0.23.1",
     "eslint": "^1.7.3",
-    "eslint-loader": "^1.3.0",
     "json-loader": "^0.5.3",
-    "karma": "^0.13.21",
-    "karma-chrome-launcher": "^0.2.2",
-    "karma-mocha": "^0.2.2",
-    "karma-nyan-reporter": "^0.2.3",
-    "karma-sourcemap-loader": "^0.3.7",
-    "karma-webpack": "^1.7.0",
-    "mocha": "^2.4.5",
     "style-loader": "^0.13.0",
-    "ts-loader": "^0.8.1",
-    "typescript": "^1.9.0-dev.20160220",
-    "typings": "^0.6.8",
     "webpack": "^1.12.11",
     "webpack-dev-server": "^1.14.1"
   }
