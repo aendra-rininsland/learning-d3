@@ -1,5 +1,5 @@
-# Learning Data Visualization with D3.js, second edition
-## Forthcoming in 2016 from Packt Publishing by Ændrew Rininsland
+# [Learning Data Visualization with D3.js, second edition](https://www.packtpub.com/web-development/learning-d3js-data-visualization-second-edition)
+## By [Ændrew Rininsland](http://www.twitter.com/aendrew), [Swizec Teller](http://twitter.com/swizec)
 
 ### Introduction
 
