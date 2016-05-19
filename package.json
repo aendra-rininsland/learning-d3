@@ -4,9 +4,9 @@
   "description": "Learning Data Visualization with D3.js (2nd edition) examples and tutorials",
   "main": "src/index.js",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha spec/index.js",
-    "lint": "./node_modules/eslint/bin/eslint.js src/*.js",
-    "start": "./node_modules/webpack-dev-server/bin/webpack-dev-server.js --inline --content-base src/"
+    "test": "mocha spec/index.js",
+    "lint": "eslint src/*.js",
+    "start": "webpack-dev-server --inline --content-base src/"
   },
   "repository": {
     "type": "git",
